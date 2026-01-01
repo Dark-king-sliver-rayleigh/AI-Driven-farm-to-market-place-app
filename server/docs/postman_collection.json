@@ -1,0 +1,516 @@
+{
+  "info": {
+    "name": "AgroDirect API Collection",
+    "description": "Complete API collection for testing the AgroDirect Farm-to-Consumer Marketplace",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "farmerToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "consumerToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "logisticsToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/system/health"
+          }
+        },
+        {
+          "name": "System Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/system/stats"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Authentication",
+      "item": [
+        {
+          "name": "Register Farmer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.collectionVariables.set('farmerToken', jsonData.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Raju Farmer\",\n  \"phone\": \"9876543210\",\n  \"password\": \"farmer123\",\n  \"role\": \"FARMER\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/register"
+          }
+        },
+        {
+          "name": "Register Consumer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.collectionVariables.set('consumerToken', jsonData.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Priya Consumer\",\n  \"phone\": \"9876543211\",\n  \"password\": \"consumer123\",\n  \"role\": \"CONSUMER\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/register"
+          }
+        },
+        {
+          "name": "Register Logistics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.collectionVariables.set('logisticsToken', jsonData.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Vijay Driver\",\n  \"phone\": \"9876543212\",\n  \"password\": \"logistics123\",\n  \"role\": \"LOGISTICS\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/register"
+          }
+        },
+        {
+          "name": "Login Farmer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.collectionVariables.set('farmerToken', jsonData.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"9876543210\",\n  \"password\": \"farmer123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{farmerToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Farmer - Products",
+      "item": [
+        {
+          "name": "Create Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.product && jsonData.product._id) {",
+                  "    pm.collectionVariables.set('productId', jsonData.product._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{farmerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fresh Tomatoes\",\n  \"quantity\": 100,\n  \"unit\": \"kg\",\n  \"price\": 40,\n  \"status\": \"AVAILABLE\"\n}"
+            },
+            "url": "{{baseUrl}}/api/farmer/products"
+          }
+        },
+        {
+          "name": "Get My Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{farmerToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/farmer/products"
+          }
+        },
+        {
+          "name": "Update Product Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{farmerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ON_HOLD_OFFLINE\"\n}"
+            },
+            "url": "{{baseUrl}}/api/farmer/products/{{productId}}/status"
+          }
+        },
+        {
+          "name": "Get Farmer Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{farmerToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/farmer/orders"
+          }
+        },
+        {
+          "name": "Farmer Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{farmerToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/farmer/dashboard"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Consumer - Orders",
+      "item": [
+        {
+          "name": "Browse Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{consumerToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/products"
+          }
+        },
+        {
+          "name": "Get Product Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{consumerToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Create Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.order && jsonData.order._id) {",
+                  "    pm.collectionVariables.set('orderId', jsonData.order._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{consumerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 10 }\n  ],\n  \"paymentMode\": \"COD\"\n}"
+            },
+            "url": "{{baseUrl}}/api/orders"
+          }
+        },
+        {
+          "name": "Get Consumer Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{consumerToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/consumer/orders"
+          }
+        },
+        {
+          "name": "Consumer Home",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{consumerToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/consumer/home"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Logistics - Delivery",
+      "item": [
+        {
+          "name": "Get Available Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{logisticsToken}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/logistics/orders?status=CREATED",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "logistics", "orders"],
+              "query": [{ "key": "status", "value": "CREATED" }]
+            }
+          }
+        },
+        {
+          "name": "Accept Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{logisticsToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pickupLocation\": {\n    \"address\": \"Raju Farm, Village Greenfield\",\n    \"coordinates\": { \"lat\": 28.5355, \"lng\": 77.3910 }\n  },\n  \"dropLocation\": {\n    \"address\": \"42 Urban Apartments, City\",\n    \"coordinates\": { \"lat\": 28.4595, \"lng\": 77.0266 }\n  },\n  \"distance\": 25.5\n}"
+            },
+            "url": "{{baseUrl}}/api/logistics/orders/{{orderId}}/accept"
+          }
+        },
+        {
+          "name": "Get My Deliveries",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{logisticsToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/logistics/my-deliveries"
+          }
+        },
+        {
+          "name": "Update Status - AT_PICKUP",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{logisticsToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"AT_PICKUP\" }"
+            },
+            "url": "{{baseUrl}}/api/logistics/orders/{{orderId}}/status"
+          }
+        },
+        {
+          "name": "Update Status - PICKED_UP",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{logisticsToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"PICKED_UP\" }"
+            },
+            "url": "{{baseUrl}}/api/logistics/orders/{{orderId}}/status"
+          }
+        },
+        {
+          "name": "Update Status - IN_TRANSIT",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{logisticsToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"IN_TRANSIT\" }"
+            },
+            "url": "{{baseUrl}}/api/logistics/orders/{{orderId}}/status"
+          }
+        },
+        {
+          "name": "Update Status - DELIVERED",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{logisticsToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"DELIVERED\" }"
+            },
+            "url": "{{baseUrl}}/api/logistics/orders/{{orderId}}/status"
+          }
+        },
+        {
+          "name": "Reject Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{logisticsToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"reason\": \"Too far away\" }"
+            },
+            "url": "{{baseUrl}}/api/logistics/orders/{{orderId}}/reject"
+          }
+        },
+        {
+          "name": "Logistics Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{logisticsToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/logistics/dashboard"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Error Scenarios",
+      "item": [
+        {
+          "name": "Unauthorized - No Token",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/farmer/products"
+          }
+        },
+        {
+          "name": "Forbidden - Wrong Role",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{consumerToken}}" }
+            ],
+            "url": "{{baseUrl}}/api/farmer/products"
+          }
+        },
+        {
+          "name": "Invalid Status Transition",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{logisticsToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"status\": \"DELIVERED\" }"
+            },
+            "url": "{{baseUrl}}/api/logistics/orders/{{orderId}}/status"
+          }
+        },
+        {
+          "name": "Insufficient Stock",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{consumerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 99999 }\n  ],\n  \"paymentMode\": \"COD\"\n}"
+            },
+            "url": "{{baseUrl}}/api/orders"
+          }
+        }
+      ]
+    }
+  ]
+}
