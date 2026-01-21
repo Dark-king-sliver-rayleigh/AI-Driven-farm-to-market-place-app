@@ -122,9 +122,35 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+// Import price data scheduler
+const priceDataScheduler = require('./utils/priceDataScheduler');
+
+const server = app.listen(PORT, () => {
   console.log(`\n🚀 Server running on port ${PORT}`);
   console.log(`📡 API available at http://localhost:${PORT}/api`);
   console.log(`📊 Stats available at http://localhost:${PORT}/system/stats`);
   console.log(`💚 Health check at http://localhost:${PORT}/system/health\n`);
+  
+  // Start price data scheduler
+  priceDataScheduler.start();
 });
+
+// Graceful shutdown handler
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Shutting down gracefully...');
+  priceDataScheduler.stop();
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received. Shutting down gracefully...');
+  priceDataScheduler.stop();
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
+

@@ -177,15 +177,14 @@ export function ConsumerProfile() {
                 </div>
               )}
             </div>
-            {isEditing && (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors"
-                title="Change photo"
-              >
-                📷
-              </button>
-            )}
+            {/* Always show camera button for photo upload */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors"
+              title="Change photo"
+            >
+              📷
+            </button>
             <input
               ref={fileInputRef}
               type="file"
@@ -194,8 +193,7 @@ export function ConsumerProfile() {
               className="hidden"
             />
           </div>
-          <h1 className="text-3xl font-bold mt-4">{displayUser.name || 'Consumer'}</h1>
-          <p className="text-blue-200 mt-1">{displayUser.role || 'Consumer'} Account</p>
+          <h1 className="text-3xl font-bold mt-4">{displayUser.name || 'Welcome'}</h1>
         </div>
       </div>
 

@@ -47,6 +47,36 @@ const UserSchema = new mongoose.Schema({
     type: String,  // Base64 data URL or external URL
     default: ''
   },
+  // Logistics-specific fields (only applicable when role=LOGISTICS)
+  vehicleType: {
+    type: String,
+    enum: {
+      values: ['BIKE', 'SCOOTER', 'CAR', 'VAN', 'TRUCK'],
+      message: 'Vehicle type must be BIKE, SCOOTER, CAR, VAN, or TRUCK'
+    },
+    default: 'BIKE'
+  },
+  vehicleNumber: {
+    type: String,
+    trim: true,
+    maxlength: [20, 'Vehicle number cannot exceed 20 characters'],
+    default: ''
+  },
+  loadCapacity: {
+    type: Number,  // in kg
+    min: [0, 'Load capacity cannot be negative'],
+    default: 0
+  },
+  serviceArea: {
+    type: String,
+    trim: true,
+    maxlength: [200, 'Service area cannot exceed 200 characters'],
+    default: ''
+  },
+  isAvailable: {
+    type: Boolean,
+    default: true
+  },
   createdAt: {
     type: Date,
     default: Date.now

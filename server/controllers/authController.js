@@ -161,6 +161,12 @@ const getMe = async (req, res) => {
         address: user.address || '',
         farmArea: user.farmArea || '',
         profilePhoto: user.profilePhoto || '',
+        // Logistics-specific fields
+        vehicleType: user.vehicleType || 'BIKE',
+        vehicleNumber: user.vehicleNumber || '',
+        loadCapacity: user.loadCapacity || 0,
+        serviceArea: user.serviceArea || '',
+        isAvailable: user.isAvailable ?? true,
         createdAt: user.createdAt
       }
     });
@@ -180,7 +186,11 @@ const getMe = async (req, res) => {
  */
 const updateProfile = async (req, res) => {
   try {
-    const { name, address, farmArea, profilePhoto } = req.body;
+    const { 
+      name, address, farmArea, profilePhoto,
+      // Logistics-specific fields
+      vehicleType, vehicleNumber, loadCapacity, serviceArea, isAvailable
+    } = req.body;
 
     // Build update object with only provided fields
     const updateFields = {};
@@ -188,6 +198,13 @@ const updateProfile = async (req, res) => {
     if (address !== undefined) updateFields.address = address.trim();
     if (farmArea !== undefined) updateFields.farmArea = farmArea.trim();
     if (profilePhoto !== undefined) updateFields.profilePhoto = profilePhoto;
+    
+    // Logistics-specific fields
+    if (vehicleType !== undefined) updateFields.vehicleType = vehicleType;
+    if (vehicleNumber !== undefined) updateFields.vehicleNumber = vehicleNumber.trim();
+    if (loadCapacity !== undefined) updateFields.loadCapacity = Number(loadCapacity) || 0;
+    if (serviceArea !== undefined) updateFields.serviceArea = serviceArea.trim();
+    if (isAvailable !== undefined) updateFields.isAvailable = Boolean(isAvailable);
 
     // Update user
     const user = await User.findByIdAndUpdate(
@@ -214,6 +231,12 @@ const updateProfile = async (req, res) => {
         address: user.address || '',
         farmArea: user.farmArea || '',
         profilePhoto: user.profilePhoto || '',
+        // Logistics-specific fields
+        vehicleType: user.vehicleType || 'BIKE',
+        vehicleNumber: user.vehicleNumber || '',
+        loadCapacity: user.loadCapacity || 0,
+        serviceArea: user.serviceArea || '',
+        isAvailable: user.isAvailable ?? true,
         createdAt: user.createdAt
       }
     });

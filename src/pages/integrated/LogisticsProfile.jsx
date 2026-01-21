@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { profileAPI } from '../../services/api';
@@ -10,6 +10,7 @@ import { profileAPI } from '../../services/api';
 export function LogisticsProfile() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
 
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,8 +22,11 @@ export function LogisticsProfile() {
     name: '',
     phone: '',
     vehicleType: 'BIKE',
+    vehicleNumber: '',
+    loadCapacity: 0,
     serviceArea: '',
-    isAvailable: true
+    isAvailable: true,
+    profilePhoto: ''
   });
 
   // Fetch profile
@@ -36,8 +40,11 @@ export function LogisticsProfile() {
           name: response.user?.name || '',
           phone: response.user?.phone || '',
           vehicleType: response.user?.vehicleType || 'BIKE',
+          vehicleNumber: response.user?.vehicleNumber || '',
+          loadCapacity: response.user?.loadCapacity || 0,
           serviceArea: response.user?.serviceArea || response.user?.location || '',
-          isAvailable: response.user?.isAvailable ?? true
+          isAvailable: response.user?.isAvailable ?? true,
+          profilePhoto: response.user?.profilePhoto || ''
         });
       } catch (err) {
         console.error('Failed to fetch profile:', err);
@@ -46,8 +53,11 @@ export function LogisticsProfile() {
             name: user.name || '',
             phone: user.phone || '',
             vehicleType: user.vehicleType || 'BIKE',
+            vehicleNumber: user.vehicleNumber || '',
+            loadCapacity: user.loadCapacity || 0,
             serviceArea: user.serviceArea || user.location || '',
-            isAvailable: user.isAvailable ?? true
+            isAvailable: user.isAvailable ?? true,
+            profilePhoto: user.profilePhoto || ''
           });
         }
       } finally {
@@ -82,6 +92,26 @@ export function LogisticsProfile() {
     }
   };
 
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image must be less than 2MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setFormData(prev => ({ ...prev, profilePhoto: event.target.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const displayUser = profile || user || {};
 
   return (
@@ -93,10 +123,37 @@ export function LogisticsProfile() {
             ← Back
           </button>
           <div className="text-center">
-            <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
-              <span className="text-4xl">🚚</span>
+            {/* Profile Photo with Upload Button */}
+            <div className="relative inline-block">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white/30 mx-auto">
+                {formData.profilePhoto ? (
+                  <img 
+                    src={formData.profilePhoto} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-white/20 flex items-center justify-center">
+                    <span className="text-4xl">🚚</span>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-purple-600 hover:bg-purple-50 transition-colors"
+                title="Change photo"
+              >
+                📷
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                className="hidden"
+              />
             </div>
-            <h1 className="text-2xl font-bold">{displayUser.name || 'Driver'}</h1>
+            <h1 className="text-2xl font-bold mt-3">{displayUser.name || 'Driver'}</h1>
             <p className="text-purple-200">Logistics Partner</p>
           </div>
         </div>
@@ -200,6 +257,41 @@ export function LogisticsProfile() {
                       {formData.vehicleType === 'CAR' && '🚗 Car'}
                       {formData.vehicleType === 'VAN' && '🚐 Van'}
                       {formData.vehicleType === 'TRUCK' && '🚛 Truck'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Vehicle Number */}
+                <div>
+                  <label className="text-sm text-gray-500">Vehicle Number</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={formData.vehicleNumber}
+                      onChange={(e) => setFormData(prev => ({ ...prev, vehicleNumber: e.target.value.toUpperCase() }))}
+                      placeholder="e.g., MH12AB1234"
+                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg uppercase"
+                    />
+                  ) : (
+                    <p className="text-lg font-medium text-gray-900">{formData.vehicleNumber || '—'}</p>
+                  )}
+                </div>
+
+                {/* Load Capacity */}
+                <div>
+                  <label className="text-sm text-gray-500">Load Capacity (kg)</label>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.loadCapacity}
+                      onChange={(e) => setFormData(prev => ({ ...prev, loadCapacity: parseInt(e.target.value) || 0 }))}
+                      placeholder="e.g., 50"
+                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  ) : (
+                    <p className="text-lg font-medium text-gray-900">
+                      {formData.loadCapacity > 0 ? `${formData.loadCapacity} kg` : '—'}
                     </p>
                   )}
                 </div>

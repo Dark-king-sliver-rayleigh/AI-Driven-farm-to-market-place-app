@@ -82,6 +82,20 @@ const MarketPriceSchema = new mongoose.Schema({
   arrivals: {
     type: Number,
     default: 0
+  },
+  
+  // Timestamp when this record was fetched from external API
+  fetchedAt: {
+    type: Date,
+    default: null,
+    index: true  // Index for freshness queries
+  },
+  
+  // Data source identifier (e.g., "data.gov.in", "manual", "seed")
+  source: {
+    type: String,
+    default: 'manual',
+    enum: ['data.gov.in', 'manual', 'seed', 'csv']
   }
 }, { 
   timestamps: true 
@@ -92,5 +106,11 @@ MarketPriceSchema.index({ commodity: 1, mandi: 1, date: -1 });
 
 // Compound index for state + commodity queries
 MarketPriceSchema.index({ state: 1, commodity: 1 });
+
+// Unique compound index for duplicate prevention
+MarketPriceSchema.index(
+  { commodity: 1, mandi: 1, date: 1, variety: 1 },
+  { unique: true, background: true }
+);
 
 module.exports = mongoose.model('MarketPrice', MarketPriceSchema);

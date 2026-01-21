@@ -1,5 +1,6 @@
 const MarketPrice = require('../models/MarketPrice');
 const MSPPrice = require('../models/MSPPrice');
+const DataFreshnessService = require('./DataFreshnessService');
 
 /**
  * PriceInsightService
@@ -13,6 +14,7 @@ const MSPPrice = require('../models/MSPPrice');
  * 2. Full transparency - all calculations are explainable
  * 3. MSP as price floor - farmers should never price below MSP
  * 4. Farmer autonomy - suggestions only, final pricing is farmer's decision
+ * 5. Staleness awareness - marks confidence as LOW if data is stale (>24 hours)
  * 
  * DATA SOURCES:
  * - Mandi prices: Agmarknet / data.gov.in daily commodity reports
@@ -76,8 +78,18 @@ class PriceInsightService {
       // Calculate price trend
       const trend = this._calculateTrend(marketPrices);
       
-      // Determine confidence level based on data availability
-      const confidence = this._calculateConfidence(marketPrices.length, 7);
+      // Check data freshness for confidence adjustment
+      const freshness = await DataFreshnessService.getDataFreshness(commodity, mandi);
+      
+      // Determine confidence level based on data availability AND freshness
+      let confidence = this._calculateConfidence(marketPrices.length, 7);
+      
+      // Degrade confidence if data is stale
+      if (freshness.isStale && confidence === 'HIGH') {
+        confidence = 'MEDIUM';
+      } else if (freshness.isStale && confidence === 'MEDIUM') {
+        confidence = 'LOW';
+      }
       
       // Generate human-readable rationale
       const rationale = this._generateRationale(
@@ -86,7 +98,8 @@ class PriceInsightService {
         msp, 
         suggestedPrice,
         commodity,
-        mandi
+        mandi,
+        freshness.isStale
       );
       
       return {
@@ -101,7 +114,13 @@ class PriceInsightService {
         confidence: confidence,
         rationale: rationale,
         dataPoints: marketPrices.length,
-        periodDays: 7
+        periodDays: 7,
+        dataFreshness: {
+          isStale: freshness.isStale,
+          ageHours: freshness.ageHours,
+          freshnessLevel: freshness.freshnessLevel,
+          lastDataDate: freshness.lastDataDate
+        }
       };
       
     } catch (error) {
@@ -201,11 +220,16 @@ class PriceInsightService {
    * This is crucial for academic defensibility - farmers can understand
    * exactly how the suggestion was derived.
    */
-  _generateRationale(dataPoints, trend, msp, suggestedPrice, commodity, mandi) {
+  _generateRationale(dataPoints, trend, msp, suggestedPrice, commodity, mandi, isStale = false) {
     const parts = [];
     
     // Data source explanation
     parts.push(`Based on ${dataPoints} market price record(s) from ${mandi} over the last 7 days.`);
+    
+    // Staleness warning
+    if (isStale) {
+      parts.push('⚠️ Note: Market data may be outdated. Please verify current prices.');
+    }
     
     // Trend explanation
     if (trend === 'RISING') {

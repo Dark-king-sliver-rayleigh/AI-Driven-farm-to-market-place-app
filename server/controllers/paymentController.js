@@ -1,5 +1,6 @@
 const Payment = require('../models/Payment');
 const Order = require('../models/Order');
+const Notification = require('../models/Notification');
 
 /**
  * Payment Controller
@@ -232,6 +233,37 @@ const confirmPayment = async (req, res) => {
       order.lastUpdatedByRole = 'SYSTEM';
       order.lastSyncedAt = new Date();
       await order.save();
+
+      // Create payment notifications (non-blocking)
+      try {
+        const orderId = order._id.toString().slice(-8).toUpperCase();
+        
+        // Notify consumer
+        await Notification.create({
+          userId: order.consumerId,
+          role: 'CONSUMER',
+          type: isSuccess ? 'PAYMENT_SUCCESS' : 'PAYMENT_FAILURE',
+          message: isSuccess 
+            ? `Payment of ₹${payment.amount} for Order #${orderId} was successful!`
+            : `Payment of ₹${payment.amount} for Order #${orderId} failed. Please try again.`,
+          relatedEntityId: order._id,
+          relatedEntityType: 'Payment'
+        });
+
+        // Notify farmer on successful payment
+        if (isSuccess) {
+          await Notification.create({
+            userId: order.farmerId,
+            role: 'FARMER',
+            type: 'PAYMENT_SUCCESS',
+            message: `Payment received for Order #${orderId}. Amount: ₹${payment.amount}`,
+            relatedEntityId: order._id,
+            relatedEntityType: 'Payment'
+          });
+        }
+      } catch (notifError) {
+        console.error('Payment notification error (non-blocking):', notifError);
+      }
     }
 
     res.status(200).json({

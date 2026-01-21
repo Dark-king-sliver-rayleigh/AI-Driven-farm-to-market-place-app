@@ -33,7 +33,7 @@ export function Login() {
       // Redirect based on role
       switch (response.user.role) {
         case 'FARMER':
-          navigate('/farmer/dashboard');
+          navigate('/farmer/home');
           break;
         case 'CONSUMER':
           navigate('/consumer/home');

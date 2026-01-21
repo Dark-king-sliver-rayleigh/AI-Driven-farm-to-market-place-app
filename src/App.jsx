@@ -164,7 +164,7 @@ function LogisticsRoute({ children }) {
 
   if (role !== 'LOGISTICS') {
     if (role === 'FARMER') {
-      return <Navigate to="/farmer/dashboard" replace />
+      return <Navigate to="/farmer/home" replace />
     }
     return <Navigate to="/consumer/home" replace />
   }
@@ -181,7 +181,7 @@ function ConsumerRoute({ children }) {
 
   if (role !== 'CONSUMER') {
     if (role === 'FARMER') {
-      return <Navigate to="/farmer/dashboard" replace />
+      return <Navigate to="/farmer/home" replace />
     }
     return <Navigate to="/logistics/home" replace />
   }

@@ -1,5 +1,6 @@
 const Delivery = require('../models/Delivery');
 const Order = require('../models/Order');
+const Notification = require('../models/Notification');
 
 /**
  * Delivery Controller - Enhanced Version
@@ -256,6 +257,34 @@ const acceptOrder = async (req, res) => {
     order.lastSyncedAt = new Date();
     await order.save();
 
+    // Notify consumer and farmer of delivery assignment (non-blocking)
+    try {
+      const orderShortId = order._id.toString().slice(-8).toUpperCase();
+      const driverName = req.user.name || 'A driver';
+
+      // Notify consumer
+      await Notification.create({
+        userId: order.consumerId,
+        role: 'CONSUMER',
+        type: 'DELIVERY_ASSIGNED',
+        message: `${driverName} has been assigned to deliver your Order #${orderShortId}. Expect updates soon!`,
+        relatedEntityId: order._id,
+        relatedEntityType: 'Delivery'
+      });
+
+      // Notify farmer
+      await Notification.create({
+        userId: order.farmerId,
+        role: 'FARMER',
+        type: 'DELIVERY_ASSIGNED',
+        message: `Order #${orderShortId} has been picked up by ${driverName} for delivery.`,
+        relatedEntityId: order._id,
+        relatedEntityType: 'Delivery'
+      });
+    } catch (notifError) {
+      console.error('Delivery assigned notification error (non-blocking):', notifError);
+    }
+
     // Populate and return
     const populatedDelivery = await Delivery.findById(delivery._id)
       .populate({
@@ -440,6 +469,55 @@ const updateDeliveryStatus = async (req, res) => {
         order.lastUpdatedByRole = 'LOGISTICS';
         order.lastSyncedAt = new Date();
         await order.save();
+      }
+
+      // Create delivery notifications (non-blocking)
+      try {
+        const orderShortId = order._id.toString().slice(-8).toUpperCase();
+
+        // Notify if delay was detected
+        if (wasDelayed) {
+          await Notification.create({
+            userId: order.consumerId,
+            role: 'CONSUMER',
+            type: 'DELIVERY_DELAYED',
+            message: `Your Order #${orderShortId} delivery is delayed. We apologize for the inconvenience.`,
+            relatedEntityId: order._id,
+            relatedEntityType: 'Delivery'
+          });
+
+          await Notification.create({
+            userId: order.farmerId,
+            role: 'FARMER',
+            type: 'DELIVERY_DELAYED',
+            message: `Order #${orderShortId} delivery has been delayed.`,
+            relatedEntityId: order._id,
+            relatedEntityType: 'Delivery'
+          });
+        }
+
+        // Notify on delivery completion
+        if (status === 'DELIVERED') {
+          await Notification.create({
+            userId: order.consumerId,
+            role: 'CONSUMER',
+            type: 'DELIVERY_STATUS_UPDATE',
+            message: `Your Order #${orderShortId} has been delivered! Thank you for your order.`,
+            relatedEntityId: order._id,
+            relatedEntityType: 'Delivery'
+          });
+
+          await Notification.create({
+            userId: order.farmerId,
+            role: 'FARMER',
+            type: 'DELIVERY_STATUS_UPDATE',
+            message: `Order #${orderShortId} has been delivered successfully.`,
+            relatedEntityId: order._id,
+            relatedEntityType: 'Delivery'
+          });
+        }
+      } catch (notifError) {
+        console.error('Delivery notification error (non-blocking):', notifError);
       }
     }
 

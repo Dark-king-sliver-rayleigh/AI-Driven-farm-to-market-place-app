@@ -48,35 +48,79 @@ export function LogisticsHome() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header */}
+      {/* Header with Profile and Notification Icons */}
       <div className="bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 text-white py-8 px-4">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold">Welcome, {user?.name || 'Driver'}</h1>
-          <p className="text-purple-200 mt-1">Your delivery dashboard</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-2xl font-bold">Welcome, {user?.name || 'Driver'}</h1>
+              <p className="text-purple-200 mt-1">Your delivery dashboard</p>
+            </div>
+            {/* Top Right Icons */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/logistics/notifications')}
+                className="relative w-11 h-11 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+                title="Notifications"
+              >
+                <span className="text-xl">🔔</span>
+                {notifications.filter(n => !n.isRead).length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                    {notifications.filter(n => !n.isRead).length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => navigate('/logistics/profile')}
+                className="w-11 h-11 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+                title="Profile"
+              >
+                <span className="text-xl">👤</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* Top Quick Actions: Earnings & Available Orders */}
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            onClick={() => navigate('/logistics/orders')}
+            className="bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl p-5 shadow-lg hover:shadow-xl transition-all flex flex-col items-center gap-3"
+          >
+            <span className="text-3xl">📋</span>
+            <span className="font-semibold text-lg">Available Orders</span>
+          </button>
+          <button
+            onClick={() => navigate('/logistics/earnings')}
+            className="bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl p-5 shadow-lg hover:shadow-xl transition-all flex flex-col items-center gap-3"
+          >
+            <span className="text-3xl">💰</span>
+            <span className="font-semibold text-lg">Earnings</span>
+          </button>
+        </div>
+
         {/* Current Active Delivery - Large Button */}
         {currentActive && (
           <button
             onClick={() => navigate(`/logistics/delivery/${currentActive.orderId?._id || currentActive._id}`)}
-            className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all text-left"
+            className="w-full bg-white border-2 border-purple-200 text-gray-900 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all text-left"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-purple-200 text-sm font-medium uppercase tracking-wide">Active Delivery</p>
+                <p className="text-purple-600 text-sm font-medium uppercase tracking-wide">Active Delivery</p>
                 <p className="text-2xl font-bold mt-1">
                   Order #{(currentActive.orderId?._id || currentActive._id).slice(-8).toUpperCase()}
                 </p>
-                <p className="text-purple-200 mt-2 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                <p className="text-gray-500 mt-2 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                   {currentActive.deliveryStatus?.replace('_', ' ')}
                 </p>
               </div>
               <div className="text-6xl opacity-80">🚚</div>
             </div>
-            <div className="mt-4 pt-4 border-t border-purple-500/30 text-lg font-medium">
+            <div className="mt-4 pt-4 border-t border-gray-100 text-purple-600 text-lg font-medium">
               Tap to view details →
             </div>
           </button>
@@ -87,13 +131,7 @@ export function LogisticsHome() {
           <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
             <div className="text-5xl mb-3 opacity-50">📦</div>
             <h3 className="text-lg font-semibold text-gray-900">No Active Delivery</h3>
-            <p className="text-gray-500 mt-1 mb-4">Accept an order to start delivering</p>
-            <button
-              onClick={() => navigate('/logistics/orders')}
-              className="px-6 py-3 bg-purple-600 text-white rounded-xl font-medium text-lg hover:bg-purple-700"
-            >
-              View Available Orders
-            </button>
+            <p className="text-gray-500 mt-1">Accept an order to start delivering</p>
           </div>
         )}
 
@@ -138,69 +176,6 @@ export function LogisticsHome() {
           </div>
         )}
 
-        {/* Recent Notifications */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
-            <h2 className="font-semibold text-gray-900">Recent Notifications</h2>
-            <button 
-              onClick={() => navigate('/logistics/notifications')}
-              className="text-purple-600 text-sm font-medium"
-            >
-              View All →
-            </button>
-          </div>
-          <div className="divide-y divide-gray-100">
-            {notifLoading ? (
-              <div className="p-5 text-center text-gray-500">Loading...</div>
-            ) : recentNotifications.length === 0 ? (
-              <div className="p-5 text-center text-gray-500">
-                <span className="text-2xl block mb-2 opacity-50">🔔</span>
-                No notifications
-              </div>
-            ) : (
-              recentNotifications.map(n => (
-                <div key={n._id} className={`p-4 ${!n.isRead ? 'bg-purple-50' : ''}`}>
-                  <p className="text-gray-800 text-sm">{n.message}</p>
-                  <p className="text-gray-400 text-xs mt-1">
-                    {new Date(n.createdAt).toLocaleString()}
-                  </p>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-4">
-          <button
-            onClick={() => navigate('/logistics/orders')}
-            className="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col items-center gap-3"
-          >
-            <span className="text-3xl">📋</span>
-            <span className="font-medium text-gray-900">Available Orders</span>
-          </button>
-          <button
-            onClick={() => navigate('/logistics/history')}
-            className="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col items-center gap-3"
-          >
-            <span className="text-3xl">📜</span>
-            <span className="font-medium text-gray-900">Delivery History</span>
-          </button>
-          <button
-            onClick={() => navigate('/logistics/earnings')}
-            className="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col items-center gap-3"
-          >
-            <span className="text-3xl">💰</span>
-            <span className="font-medium text-gray-900">Earnings</span>
-          </button>
-          <button
-            onClick={() => navigate('/logistics/profile')}
-            className="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col items-center gap-3"
-          >
-            <span className="text-3xl">👤</span>
-            <span className="font-medium text-gray-900">Profile</span>
-          </button>
-        </div>
       </div>
     </div>
   );
