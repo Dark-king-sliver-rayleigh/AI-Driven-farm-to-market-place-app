@@ -26,4 +26,6 @@ dist-ssr
 
 # Environment files
 .env
+.env.*
 server/.env
+server/.env.*
