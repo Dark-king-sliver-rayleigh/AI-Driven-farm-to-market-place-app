@@ -102,25 +102,59 @@ class PriceInsightService {
         freshness.isStale
       );
       
+      // Get location info from most recent record
+      const latestRecord = marketPrices[0];
+      
+      // Get unique varieties from the data
+      const varieties = [...new Set(marketPrices.map(p => p.variety).filter(v => v && v !== 'Local'))];
+      
+      // Calculate average arrivals
+      const avgArrivals = marketPrices.reduce((sum, p) => sum + (p.arrivals || 0), 0) / marketPrices.length;
+      
+      // Get data sources breakdown
+      const sourceBreakdown = marketPrices.reduce((acc, p) => {
+        acc[p.source] = (acc[p.source] || 0) + 1;
+        return acc;
+      }, {});
+      
       return {
         success: true,
         commodity: commodity,
         mandi: mandi,
+        // Location data
+        location: {
+          state: latestRecord.state || 'Unknown',
+          district: latestRecord.district || '',
+          mandi: mandi
+        },
+        // Price data
         suggestedPrice: Math.round(suggestedPrice),
         minPrice: Math.round(priceStats.minPrice),
         maxPrice: Math.round(priceStats.maxPrice),
+        modalPrice: Math.round(priceStats.modalAverage),
         msp: msp,
+        unit: latestRecord.unit || 'Rs./Quintal',
+        // Variety data
+        varieties: varieties.length > 0 ? varieties : ['Local'],
+        primaryVariety: latestRecord.variety || 'Local',
+        // Market supply data
+        avgArrivals: Math.round(avgArrivals * 100) / 100,
+        // Trend and confidence
         trend: trend,
         confidence: confidence,
         rationale: rationale,
+        // Data metadata
         dataPoints: marketPrices.length,
         periodDays: 7,
+        sources: sourceBreakdown,
         dataFreshness: {
           isStale: freshness.isStale,
           ageHours: freshness.ageHours,
           freshnessLevel: freshness.freshnessLevel,
           lastDataDate: freshness.lastDataDate
-        }
+        },
+        // Latest record date for reference
+        latestPriceDate: latestRecord.date
       };
       
     } catch (error) {

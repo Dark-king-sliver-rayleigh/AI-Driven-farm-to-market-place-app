@@ -18,6 +18,7 @@ import { LogisticsHistory } from './pages/integrated/LogisticsHistory'
 import { LogisticsNotifications } from './pages/integrated/LogisticsNotifications'
 import { LogisticsProfile } from './pages/integrated/LogisticsProfile'
 import { LogisticsEarnings } from './pages/integrated/LogisticsEarnings'
+import { ConsumerOrderTracking } from './pages/integrated/ConsumerOrderTracking'
 
 // Import farmer components
 import { AddProductEnhanced } from './components/farmer/AddProductEnhanced'
@@ -333,6 +334,14 @@ function AppContent() {
             }
           />
 
+          <Route
+            path="/consumer/orders/:orderId/track"
+            element={
+              <ConsumerRoute>
+                <ConsumerOrderTracking />
+              </ConsumerRoute>
+            }
+          />
           <Route
             path="/consumer/profile"
             element={

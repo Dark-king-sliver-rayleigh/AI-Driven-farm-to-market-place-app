@@ -108,11 +108,18 @@ export function CategoryInsightsPage() {
                   key={item.commodity}
                   commodity={item.commodity}
                   mandi={item.mandi}
+                  location={item.location}
                   suggestedPrice={item.suggestedPrice}
                   minPrice={item.minPrice}
                   maxPrice={item.maxPrice}
                   trend={item.trend}
                   confidence={item.confidence}
+                  varieties={item.varieties}
+                  avgArrivals={item.avgArrivals}
+                  sources={item.sources}
+                  dataFreshness={item.dataFreshness}
+                  msp={item.msp}
+                  latestPriceDate={item.latestPriceDate}
                 />
               ) : (
                 <div

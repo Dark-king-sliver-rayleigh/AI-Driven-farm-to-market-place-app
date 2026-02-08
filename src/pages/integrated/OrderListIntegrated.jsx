@@ -334,6 +334,16 @@ export function OrderListIntegrated() {
 
                       {/* Actions */}
                       <div className="mt-4 pt-4 border-t border-gray-200 flex justify-end gap-3">
+                        {/* Track Order Button - show for active deliveries */}
+                        {['ASSIGNED', 'PICKED_UP'].includes(order.orderStatus) && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); navigate(`/consumer/orders/${order._id}/track`); }}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium flex items-center gap-2"
+                          >
+                            📍 Track Order
+                          </button>
+                        )}
+
                         {/* Cancel Button */}
                         {canCancel(order) && (
                           <button

@@ -57,6 +57,7 @@ app.use('/api/farmer/products', require('./routes/products'));
 app.use('/api/farmer', require('./routes/priceInsight'));  // Price Intelligence Module
 app.use('/api', require('./routes/orders'));
 app.use('/api/logistics', require('./routes/logistics'));
+app.use('/api/logistics/tracking', require('./routes/tracking'));  // Real-time Tracking
 app.use('/api/payments', require('./routes/payments'));  // Mock UPI Payments
 app.use('/api/notifications', require('./routes/notifications'));  // Notifications
 app.use('/api/feedback', require('./routes/feedback'));  // Feedback & Ratings

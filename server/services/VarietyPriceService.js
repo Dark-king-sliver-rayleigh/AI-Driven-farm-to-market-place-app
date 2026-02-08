@@ -1,30 +1,33 @@
 /**
- * MandiPriceService
+ * VarietyPriceService
  * 
- * Fetches official mandi (agricultural market) prices from data.gov.in Agmarknet API.
- * This service runs as a background job to keep market data fresh.
+ * Fetches variety-wise daily market prices from data.gov.in API.
+ * This service complements MandiPriceService by providing granular variety data.
  * 
  * ACADEMIC NOTE:
  * - Uses official government API (data.gov.in)
+ * - Dataset: "Variety-wise Daily Market Prices Data of Commodity"
+ * - Key differentiator: Provides variety-specific pricing
  * - No web scraping - fully legal and documented
- * - Stores normalized data in MongoDB for offline analysis
  * 
- * Data Source: https://data.gov.in/catalog/current-daily-price-various-commodities-various-markets-mandi
+ * Data Source: https://data.gov.in/resource/variety-wise-daily-market-prices-data-commodity
  */
 const MarketPrice = require('../models/MarketPrice');
 
-class MandiPriceService {
+class VarietyPriceService {
   constructor() {
     this.apiKey = process.env.DATA_GOV_API_KEY || '';
     this.apiBaseUrl = process.env.DATA_GOV_API_URL || 'https://api.data.gov.in/resource';
-    // Resource ID for daily mandi prices dataset
-    this.resourceId = '9ef84268-d588-465a-a308-a864a43d0070';
+    // Resource ID for variety-wise daily prices dataset
+    // Note: This needs to be verified on data.gov.in
+    this.resourceId = process.env.VARIETY_PRICE_RESOURCE_ID || '35985678-0d79-46b4-9ed6-6f13308a1d24';
     this.batchSize = 500; // Records per API call
+    this.sourceTag = 'data.gov.in-variety'; // Distinct source identifier
   }
 
   /**
-   * Fetch daily mandi prices from data.gov.in API
-   * Called once per day by the scheduler
+   * Fetch variety-wise daily prices from data.gov.in API
+   * Called once per day by the scheduler (after MandiPriceService)
    * 
    * @returns {Object} { success, recordsProcessed, errors }
    */
@@ -35,17 +38,23 @@ class MandiPriceService {
       recordsInserted: 0,
       recordsUpdated: 0,
       errors: [],
-      fetchedAt: new Date()
+      fetchedAt: new Date(),
+      source: this.sourceTag
     };
 
     if (!this.apiKey) {
       result.errors.push('DATA_GOV_API_KEY not configured in environment');
-      console.error('[MandiPriceService] API key not configured');
+      console.error('[VarietyPriceService] API key not configured');
       return result;
     }
 
+    if (!this.resourceId || this.resourceId === '35985678-0d79-46b4-9ed6-6f13308a1d24') {
+      console.warn('[VarietyPriceService] Using default resource ID - please verify on data.gov.in');
+    }
+
     try {
-      console.log('[MandiPriceService] Starting daily price fetch...');
+      console.log('[VarietyPriceService] Starting variety-wise price fetch...');
+      console.log(`[VarietyPriceService] Resource ID: ${this.resourceId}`);
       
       let offset = 0;
       let hasMoreData = true;
@@ -73,7 +82,7 @@ class MandiPriceService {
         
         // Safety limit: max 50 batches (25,000 records per run)
         if (offset >= this.batchSize * 50) {
-          console.log('[MandiPriceService] Reached batch limit, stopping fetch');
+          console.log('[VarietyPriceService] Reached batch limit, stopping fetch');
           hasMoreData = false;
         }
         
@@ -82,11 +91,11 @@ class MandiPriceService {
       }
 
       result.success = true;
-      console.log(`[MandiPriceService] Fetch complete: ${result.recordsInserted} inserted, ${result.recordsUpdated} updated`);
+      console.log(`[VarietyPriceService] Fetch complete: ${result.recordsInserted} inserted, ${result.recordsUpdated} updated`);
       
     } catch (error) {
       result.errors.push(error.message);
-      console.error('[MandiPriceService] Fetch error:', error.message);
+      console.error('[VarietyPriceService] Fetch error:', error.message);
     }
 
     return result;
@@ -121,7 +130,7 @@ class MandiPriceService {
       return data.records || [];
       
     } catch (error) {
-      console.error(`[MandiPriceService] Batch fetch error at offset ${offset}:`, error.message);
+      console.error(`[VarietyPriceService] Batch fetch error at offset ${offset}:`, error.message);
       return [];
     }
   }
@@ -129,12 +138,12 @@ class MandiPriceService {
   /**
    * Normalize a raw API record to match MarketPrice schema
    * 
-   * API fields (typical):
+   * Expected API fields (variety-wise dataset):
    * - commodity: "Tomato"
    * - state: "Tamil Nadu"
-   * - market: "Chennai"
-   * - variety: "Local"
-   * - arrival_date: "19/01/2026"
+   * - market: "Chennai" or district
+   * - variety: "Hybrid" / "Local" / "Desi" etc. (KEY FIELD)
+   * - arrival_date: "19/01/2026" or "2026-01-19"
    * - min_price: "2000"
    * - max_price: "3000"
    * - modal_price: "2500"
@@ -149,11 +158,20 @@ class MandiPriceService {
       const state = rawRecord.state || rawRecord.State || '';
       const district = rawRecord.district || rawRecord.District || '';
       const mandi = rawRecord.market || rawRecord.Market || '';
-      const variety = rawRecord.variety || rawRecord.Variety || 'Local';
+      
+      // VARIETY IS REQUIRED for this dataset - this is the key differentiator
+      const variety = rawRecord.variety || rawRecord.Variety || '';
+      
+      // Skip records without variety (defeats the purpose of this dataset)
+      if (!variety || variety.trim() === '') {
+        return null;
+      }
       
       // Parse date - handle DD/MM/YYYY and YYYY-MM-DD formats
       let date = null;
-      const dateStr = rawRecord.arrival_date || rawRecord.Arrival_Date || rawRecord.date || '';
+      const dateStr = rawRecord.arrival_date || rawRecord.Arrival_Date || 
+                      rawRecord.price_date || rawRecord.Price_Date ||
+                      rawRecord.date || rawRecord.Date || '';
       if (dateStr) {
         if (dateStr.includes('/')) {
           const [day, month, year] = dateStr.split('/');
@@ -170,7 +188,7 @@ class MandiPriceService {
 
       // Use market name if available, otherwise fall back to district
       const mandiName = mandi.trim() || district.trim();
-      
+
       // Validate required fields
       if (!commodity || !mandiName || !date || isNaN(date.getTime())) {
         return null;
@@ -194,11 +212,11 @@ class MandiPriceService {
         unit: 'Rs./Quintal',
         arrivals: this._parseFloat(rawRecord.arrivals || rawRecord.Arrivals) || 0,
         fetchedAt: new Date(),
-        source: 'data.gov.in'
+        source: this.sourceTag
       };
 
     } catch (error) {
-      console.error('[MandiPriceService] Record normalization error:', error.message);
+      console.error('[VarietyPriceService] Record normalization error:', error.message);
       return null;
     }
   }
@@ -231,6 +249,9 @@ class MandiPriceService {
   /**
    * Upsert price records with duplicate detection
    * Uses compound key: commodity + mandi + date + variety
+   * 
+   * NOTE: This uses the same MarketPrice collection as MandiPriceService
+   * The unique index on { commodity, mandi, date, variety } prevents duplicates
    * 
    * @param {Array} records - Normalized price records
    * @returns {Object} { inserted, updated }
@@ -272,18 +293,18 @@ class MandiPriceService {
       result.inserted = bulkResult.upsertedCount || 0;
       result.updated = bulkResult.modifiedCount || 0;
     } catch (error) {
-      console.error('[MandiPriceService] Bulk upsert error:', error.message);
+      console.error('[VarietyPriceService] Bulk upsert error:', error.message);
     }
 
     return result;
   }
 
   /**
-   * Get timestamp of most recently fetched data
+   * Get timestamp of most recently fetched variety data
    * Used for staleness checks
    */
   async getLastFetchTimestamp() {
-    const latestRecord = await MarketPrice.findOne({ source: 'data.gov.in' })
+    const latestRecord = await MarketPrice.findOne({ source: this.sourceTag })
       .sort({ fetchedAt: -1 })
       .select('fetchedAt')
       .lean();
@@ -292,11 +313,11 @@ class MandiPriceService {
   }
 
   /**
-   * Get timestamp of most recent price data
+   * Get timestamp of most recent variety price data
    * Used for data freshness checks
    */
   async getMostRecentDataDate() {
-    const latestRecord = await MarketPrice.findOne()
+    const latestRecord = await MarketPrice.findOne({ source: this.sourceTag })
       .sort({ date: -1 })
       .select('date')
       .lean();
@@ -305,22 +326,39 @@ class MandiPriceService {
   }
 
   /**
-   * Get fetch statistics
+   * Get fetch statistics for variety-wise data
    */
   async getStats() {
-    const totalRecords = await MarketPrice.countDocuments();
-    const govRecords = await MarketPrice.countDocuments({ source: 'data.gov.in' });
-    const oldestRecord = await MarketPrice.findOne().sort({ date: 1 }).select('date').lean();
-    const newestRecord = await MarketPrice.findOne().sort({ date: -1 }).select('date').lean();
+    const varietyRecords = await MarketPrice.countDocuments({ source: this.sourceTag });
+    const oldestRecord = await MarketPrice.findOne({ source: this.sourceTag })
+      .sort({ date: 1 }).select('date').lean();
+    const newestRecord = await MarketPrice.findOne({ source: this.sourceTag })
+      .sort({ date: -1 }).select('date').lean();
     const lastFetch = await this.getLastFetchTimestamp();
 
+    // Get unique varieties count
+    const uniqueVarieties = await MarketPrice.distinct('variety', { source: this.sourceTag });
+
     return {
-      totalRecords,
-      govRecords,
+      varietyRecords,
+      uniqueVarietiesCount: uniqueVarieties.length,
+      uniqueVarieties: uniqueVarieties.slice(0, 20), // Top 20 for display
       oldestDate: oldestRecord?.date || null,
       newestDate: newestRecord?.date || null,
       lastFetchedAt: lastFetch
     };
+  }
+
+  /**
+   * Get available varieties for a commodity
+   * Useful for variety selection dropdowns
+   */
+  async getVarietiesForCommodity(commodity) {
+    const varieties = await MarketPrice.distinct('variety', { 
+      commodity: new RegExp(commodity, 'i'),
+      source: this.sourceTag 
+    });
+    return varieties.filter(v => v && v.trim() !== '');
   }
 
   /**
@@ -331,4 +369,4 @@ class MandiPriceService {
   }
 }
 
-module.exports = new MandiPriceService();
+module.exports = new VarietyPriceService();

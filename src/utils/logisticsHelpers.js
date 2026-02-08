@@ -1,6 +1,6 @@
 /**
  * Logistics helper utilities
- * Provides distance calculation, sorting, and Google Maps integration
+ * Provides distance calculation, sorting, and navigation integration
  */
 
 /**
@@ -39,13 +39,20 @@ export function formatDistance(km) {
 }
 
 /**
- * Get Google Maps URL for navigation
+ * Get navigation URL for driving directions.
+ * Uses a generic geo: URI that works on mobile, and falls back
+ * to OpenStreetMap directions on desktop browsers.
  * @param {number} lat - Destination latitude
  * @param {number} lng - Destination longitude
- * @returns {string} Google Maps deep link URL
+ * @returns {string} Navigation deep link URL
  */
-export function getGoogleMapsUrl(lat, lng) {
-  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
+export function getNavigationUrl(lat, lng) {
+  // On mobile devices the geo: URI opens the default map app
+  if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+    return `geo:${lat},${lng}?q=${lat},${lng}`;
+  }
+  // Desktop fallback – OpenStreetMap directions
+  return `https://www.openstreetmap.org/directions?route=;;${lat},${lng}`;
 }
 
 /**

@@ -13,11 +13,22 @@ The Price Intelligence Module provides **transparent, explainable, data-driven p
 
 ## Data Sources
 
-### Mandi Prices (Agmarknet)
+### Mandi Prices - Current Daily Price (Agmarknet)
 - **Source**: [data.gov.in](https://data.gov.in) / [Agmarknet](https://agmarknet.gov.in)
+- **Dataset**: "Current Daily Price of Various Commodities from Various Markets (Mandi)"
 - **Format**: Daily commodity-wise, market-wise price reports
 - **Fields**: Commodity, State, Market, Min/Max/Modal Price, Arrivals
 - **Update Frequency**: Daily
+- **Source Tag**: `data.gov.in`
+
+### Mandi Prices - Variety-wise Daily Prices (NEW)
+- **Source**: [data.gov.in](https://data.gov.in)
+- **Dataset**: "Variety-wise Daily Market Prices Data of Commodity"
+- **Format**: Daily commodity-wise, variety-wise, market-wise price reports
+- **Fields**: Commodity, Variety, State, Market, Min/Max/Modal Price
+- **Key Differentiator**: Provides granular variety information (e.g., "Tomato - Hybrid", "Tomato - Local")
+- **Update Frequency**: Daily
+- **Source Tag**: `data.gov.in-variety`
 
 ### MSP Data (CACP)
 - **Source**: Commission for Agricultural Costs and Prices

@@ -28,6 +28,13 @@ const MarketPriceSchema = new mongoose.Schema({
     trim: true
   },
   
+  // District name (e.g., "Chennai", "Bangalore Urban")
+  district: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  
   // Mandi/Market name (e.g., "Bangalore APMC", "Chennai Market")
   mandi: {
     type: String,
@@ -95,7 +102,7 @@ const MarketPriceSchema = new mongoose.Schema({
   source: {
     type: String,
     default: 'manual',
-    enum: ['data.gov.in', 'manual', 'seed', 'csv']
+    enum: ['data.gov.in', 'data.gov.in-variety', 'manual', 'seed', 'csv']
   }
 }, { 
   timestamps: true 

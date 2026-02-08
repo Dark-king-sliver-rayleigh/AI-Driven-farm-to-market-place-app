@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { logisticsAPI } from '../../services/api';
 import { useMyDeliveries } from '../../hooks/useData';
+import { DriverTrackingPanel } from '../../components/integrated/DriverTrackingPanel';
+import { getNavigationUrl } from '../../utils/logisticsHelpers';
 
 // Status configuration with actions
 const STATUS_CONFIG = {
@@ -114,9 +116,14 @@ export function LogisticsActiveDelivery() {
     }
   };
 
-  const openGoogleMaps = (address) => {
-    const encoded = encodeURIComponent(address);
-    window.open(`https://www.google.com/maps/search/?api=1&query=${encoded}`, '_blank');
+  const openNavigation = (location) => {
+    if (location?.coordinates?.lat && location?.coordinates?.lng) {
+      window.open(getNavigationUrl(location.coordinates.lat, location.coordinates.lng), '_blank');
+    } else {
+      // Fallback: search by address on OpenStreetMap
+      const encoded = encodeURIComponent(location?.address || 'Unknown');
+      window.open(`https://www.openstreetmap.org/search?query=${encoded}`, '_blank');
+    }
   };
 
   // Loading state
@@ -186,6 +193,28 @@ export function LogisticsActiveDelivery() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
+        {/* Live Tracking Map */}
+        {isActive && (
+          <DriverTrackingPanel
+            orderId={orderId}
+            geoapifyApiKey={import.meta.env.VITE_GEOAPIFY_API_KEY}
+            orderDetails={{
+              pickupAddress: delivery.pickupLocation?.address || 'Not set',
+              deliveryAddress: delivery.dropLocation?.address || 'Not set',
+              farmerName: farmer.name,
+              consumerName: consumer.name,
+              consumerPhone: consumer.phone,
+              items: order.items?.map(item => ({
+                name: item.productId?.name || 'Product',
+                quantity: item.quantity,
+                unit: item.productId?.unit || ''
+              })),
+              totalAmount: order.totalAmount
+            }}
+            onDeliveryComplete={() => refetch()}
+          />
+        )}
+
         {/* Timeline Progress */}
         {isActive && (
           <div className="bg-white rounded-xl p-4 shadow-sm">
@@ -257,10 +286,10 @@ export function LogisticsActiveDelivery() {
               <p className="text-gray-700">{delivery.pickupLocation?.address || 'Address not set'}</p>
             </div>
             <button
-              onClick={() => openGoogleMaps(delivery.pickupLocation?.address || farmer.location || 'Farm')}
+              onClick={() => openNavigation(delivery.pickupLocation || { address: farmer.location || 'Farm' })}
               className="w-full py-3 bg-green-600 text-white rounded-xl font-medium text-lg flex items-center justify-center gap-2"
             >
-              <span>🗺️</span> Open in Google Maps
+              <span>🗺️</span> Navigate to Pickup
             </button>
           </div>
         </div>
@@ -286,10 +315,10 @@ export function LogisticsActiveDelivery() {
               <p className="text-gray-700">{delivery.dropLocation?.address || 'Address not set'}</p>
             </div>
             <button
-              onClick={() => openGoogleMaps(delivery.dropLocation?.address || consumer.location || 'Consumer')}
+              onClick={() => openNavigation(delivery.dropLocation || { address: consumer.location || 'Consumer' })}
               className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium text-lg flex items-center justify-center gap-2"
             >
-              <span>🗺️</span> Open in Google Maps
+              <span>🗺️</span> Navigate to Drop-off
             </button>
           </div>
         </div>
