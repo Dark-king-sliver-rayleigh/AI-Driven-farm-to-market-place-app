@@ -58,7 +58,7 @@ A comprehensive farm marketplace platform connecting farmers, consumers, and log
    - Rationale display (MSP, mandi rates, trends)
    - Accept/Override price suggestions
    - Negotiation with predicted farmer acceptance likelihood
-   - TODO: Replace priceEngineMock with price-intelligence API (ETL from MSP, mandi rates, historical prices)
+   - Live API wiring to Price Insight backend (with offline fallback)
 
 9. **Escrow System**
    - Payment held in escrow until delivery verification
@@ -311,7 +311,7 @@ Test coverage includes:
 
 1. **SMS Gateway**: Integrate real SMS gateway (Twilio/MSG91) for SMS listing support
 2. **IVR Parser**: Integrate IVR parser for voice uploads
-3. **Price Intelligence API**: Replace priceEngineMock with real price-intelligence API (ETL from MSP, mandi rates, historical prices)
+3. ~~**Price Intelligence API**: Replace priceEngineMock with real price-intelligence API~~ ✅ **DONE** — Frontend wired to live Price Insight API with graceful offline fallback
 4. **Payment Gateway**: Integrate payment gateway supporting UPI and payment holds / escrow (production compliance required)
 5. **Reconciliation Service**: Reconcile offline queue using server-side reconciliation endpoints and conflict resolution
 

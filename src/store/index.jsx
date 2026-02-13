@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useReducer } from 'react'
 import { loadFromStorage, saveToStorage } from '../utils/storage'
 import { seedData } from '../utils/seedData'
-import { mockPriceSuggestion } from '../utils/priceEngineMock'
+import { fetchPriceSuggestion } from '../services/priceEngine'
 
 // ----- State shape -----
 // {
@@ -370,12 +370,13 @@ export function processSyncQueue(dispatch, state) {
 }
 
 /**
- * Mock price suggestion endpoint
+ * Live price suggestion endpoint
+ * Calls the backend Price Insight API, falls back to local calculation.
  */
-export function mockPriceSuggestionEndpoint(productId, state) {
+export async function getPriceSuggestionForProduct(productId, state) {
   const product = state.products.find((p) => p.id === productId)
   if (!product) return null
-  return mockPriceSuggestion(product)
+  return fetchPriceSuggestion(product)
 }
 
 export { seedData } from '../utils/seedData'

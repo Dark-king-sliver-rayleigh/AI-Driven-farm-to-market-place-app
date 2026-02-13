@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useStore } from '../store/index'
 import { addProduct } from '../store/actions'
 import { WEIGHT_UNITS, CURRENCIES } from '../utils/units'
-import { mockPriceSuggestion, getRationaleText } from '../utils/priceEngineMock'
+import { fetchPriceSuggestion, getRationaleText } from '../services/priceEngine'
 import { enqueueOfflineAction, getPendingSyncCount } from '../store/index'
 
 /**
@@ -43,21 +43,24 @@ export function AddProductForm({ onSuccess }) {
     }
   }
 
-  const updatePriceSuggestion = () => {
+  const updatePriceSuggestion = async () => {
     if (!formData.name || !formData.pricePerUnit) {
       setPriceSuggestion(null)
       return
     }
-    // TODO: Replace priceEngineMock with price-intelligence API (ETL from MSP, mandi rates, historical prices)
-    const mockProduct = {
+    const productData = {
       name: formData.name,
       pricePerUnit: parseFloat(formData.pricePerUnit) || 0,
       currency: formData.currency,
       quantity: parseFloat(formData.quantity) || 0,
       source: formData.source,
     }
-    const suggestion = mockPriceSuggestion(mockProduct)
-    setPriceSuggestion(suggestion)
+    try {
+      const suggestion = await fetchPriceSuggestion(productData)
+      setPriceSuggestion(suggestion)
+    } catch (err) {
+      console.warn('Price suggestion fetch failed:', err.message)
+    }
   }
 
   const handleVoiceUpload = () => {
@@ -345,9 +348,22 @@ export function AddProductForm({ onSuccess }) {
                   {priceSuggestion.value} {priceSuggestion.currency}/{formData.unit}
                 </div>
                 <div className="text-xs text-gray-600 mt-1">
-                  {getRationaleText(priceSuggestion.rationaleId)} — confidence{' '}
+                  {priceSuggestion.rationale || getRationaleText(priceSuggestion.rationaleId)} — confidence{' '}
                   {Math.round(priceSuggestion.confidence * 100)}%
+                  {priceSuggestion.source === 'API' && (
+                    <span className="ml-1 text-green-600 font-medium">● Live</span>
+                  )}
+                  {priceSuggestion.source === 'FALLBACK' && (
+                    <span className="ml-1 text-yellow-600 font-medium">● Offline</span>
+                  )}
                 </div>
+                {priceSuggestion.minPrice != null && priceSuggestion.maxPrice != null && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    Market range: ₹{priceSuggestion.minPrice} – ₹{priceSuggestion.maxPrice}
+                    {priceSuggestion.msp != null && ` | MSP: ₹${priceSuggestion.msp}`}
+                    {priceSuggestion.trend && ` | Trend: ${priceSuggestion.trend}`}
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
                 <button

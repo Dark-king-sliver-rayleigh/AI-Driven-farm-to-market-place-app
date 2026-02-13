@@ -453,7 +453,8 @@ GEOAPIFY_API_KEY=your_api_key_here
 # Geoapify API Key for frontend (required for map tiles & style)
 VITE_GEOAPIFY_API_KEY=your_api_key_here
 
-# If not set, mock routes will be generated for development
+# If not set, OSRM public routing (free, no key) is used as fallback.
+# Straight-line mock is only used as a last resort if OSRM is also unavailable.
 ```
 
 ---

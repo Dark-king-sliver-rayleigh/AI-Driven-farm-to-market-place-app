@@ -232,15 +232,21 @@ class LogisticsTrackingService {
   
   /**
    * Fetch route from Geoapify Routing API
+   * Falls back to OSRM (free, no key needed) if Geoapify key is missing.
+   * Falls back to straight-line mock only as last resort.
    * 
    * @param {Object} origin - { lat, lng }
    * @param {Object} destination - { lat, lng }
    * @returns {Promise<Object>} Route data with polyline, points, distance, duration
    */
   static async fetchRouteFromGeoapify(origin, destination) {
-    // If no API key, use mock data for development
+    // If no Geoapify API key, try OSRM (free public routing, no key needed)
     if (!GEOAPIFY_API_KEY) {
-      console.warn('GEOAPIFY_API_KEY not set, using mock route data');
+      console.info('GEOAPIFY_API_KEY not set, trying OSRM public routing...');
+      const osrmResult = await this.fetchRouteFromOSRM(origin, destination);
+      if (osrmResult) return osrmResult;
+      // OSRM also failed → last-resort straight-line mock
+      console.warn('OSRM also unavailable, falling back to straight-line mock');
       return this.generateMockRoute(origin, destination);
     }
     
@@ -256,7 +262,9 @@ class LogisticsTrackingService {
       const data = await response.json();
       
       if (!data.features || data.features.length === 0) {
-        console.error('Geoapify Routing API returned no routes');
+        console.error('Geoapify Routing API returned no routes, trying OSRM...');
+        const osrmResult = await this.fetchRouteFromOSRM(origin, destination);
+        if (osrmResult) return osrmResult;
         return this.generateMockRoute(origin, destination);
       }
       
@@ -297,17 +305,82 @@ class LogisticsTrackingService {
       };
     } catch (error) {
       console.error('Error fetching route from Geoapify:', error);
+      // Try OSRM before falling to mock
+      const osrmResult = await this.fetchRouteFromOSRM(origin, destination);
+      if (osrmResult) return osrmResult;
       return this.generateMockRoute(origin, destination);
     }
   }
   
   /**
-   * Generate mock route for development/testing when Google API is unavailable
+   * Fetch route from OSRM public routing API (free, no API key required).
+   * Uses the public demo server at router.project-osrm.org.
+   * Returns real road-following routes with actual distances and durations.
+   * 
+   * @param {Object} origin - { lat, lng }
+   * @param {Object} destination - { lat, lng }
+   * @returns {Promise<Object|null>} Route data or null if OSRM fails
+   */
+  static async fetchRouteFromOSRM(origin, destination) {
+    try {
+      // OSRM uses lng,lat order in the URL path
+      const coords = `${origin.lng},${origin.lat};${destination.lng},${destination.lat}`;
+      const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=false`;
+      
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000); // 8s timeout
+      
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+      
+      const data = await response.json();
+      
+      if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) {
+        console.warn('OSRM returned no valid routes:', data.code);
+        return null;
+      }
+      
+      const route = data.routes[0];
+      const distanceMeters = Math.round(route.distance);   // meters
+      const durationSeconds = Math.round(route.duration);   // seconds
+      
+      // OSRM returns GeoJSON coordinates [lng, lat]
+      const geoCoords = route.geometry.coordinates || [];
+      const points = geoCoords.map(coord => ({
+        lat: coord[1],
+        lng: coord[0]
+      }));
+      
+      const polyline = encodePolyline(points);
+      
+      console.info(`OSRM route: ${formatDistance(distanceMeters)}, ${formatDuration(durationSeconds)} (${points.length} points)`);
+      
+      return {
+        polyline,
+        points,
+        distanceMeters,
+        distanceText: formatDistance(distanceMeters),
+        durationSeconds,
+        durationText: formatDuration(durationSeconds)
+      };
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.warn('OSRM request timed out');
+      } else {
+        console.warn('OSRM routing failed:', error.message);
+      }
+      return null;
+    }
+  }
+  
+  /**
+   * Generate straight-line route as last-resort fallback.
+   * Only used when both Geoapify and OSRM are unavailable.
    * Creates a simple straight-line route with interpolated points
    * 
    * @param {Object} origin - { lat, lng }
    * @param {Object} destination - { lat, lng }
-   * @returns {Object} Mock route data
+   * @returns {Object} Straight-line fallback route data
    */
   static generateMockRoute(origin, destination) {
     const points = [];
@@ -561,7 +634,7 @@ class LogisticsTrackingService {
   
   /**
    * Get distance/duration between two points using Geoapify Routing API.
-   * Falls back to Haversine calculation if API key is missing.
+   * Falls back to OSRM (free, no key), then to Haversine calculation.
    * 
    * @param {Object} origin - { lat, lng }
    * @param {Object} destination - { lat, lng }
@@ -569,7 +642,17 @@ class LogisticsTrackingService {
    */
   static async getDistanceMatrix(origin, destination) {
     if (!GEOAPIFY_API_KEY) {
-      // Return mock data
+      // Try OSRM first for real road distances
+      const osrmResult = await this.fetchRouteFromOSRM(origin, destination);
+      if (osrmResult) {
+        return {
+          distanceMeters: osrmResult.distanceMeters,
+          distanceText: osrmResult.distanceText,
+          durationSeconds: osrmResult.durationSeconds,
+          durationText: osrmResult.durationText
+        };
+      }
+      // OSRM failed → Haversine fallback
       const distance = calculateDistance(origin, destination);
       const duration = Math.round((distance / 1000) * 120);
       return {
@@ -604,7 +687,17 @@ class LogisticsTrackingService {
       };
     } catch (error) {
       console.error('Error fetching distance from Geoapify:', error);
-      // Fall back to mock data
+      // Try OSRM before Haversine
+      const osrmResult = await this.fetchRouteFromOSRM(origin, destination);
+      if (osrmResult) {
+        return {
+          distanceMeters: osrmResult.distanceMeters,
+          distanceText: osrmResult.distanceText,
+          durationSeconds: osrmResult.durationSeconds,
+          durationText: osrmResult.durationText
+        };
+      }
+      // Last resort: Haversine
       const distance = calculateDistance(origin, destination);
       const duration = Math.round((distance / 1000) * 120);
       return {

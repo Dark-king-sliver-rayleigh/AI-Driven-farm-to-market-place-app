@@ -5,7 +5,7 @@ import { getAvailabilityConfidence } from '../store/index'
 import { formatCurrency, convertUnit } from '../utils/units'
 import { QuantityUnitSelector } from '../components/QuantityUnitSelector'
 import { NegotiationChat } from '../components/NegotiationChat'
-import { getRationaleText, predictFarmerAcceptance } from '../utils/priceEngineMock'
+import { getRationaleText, predictFarmerAcceptance } from '../services/priceEngine'
 
 export function ProductDetail() {
   const { id } = useParams()
@@ -114,9 +114,19 @@ export function ProductDetail() {
                 {product.priceSuggestion.value} {product.priceSuggestion.currency} / {product.unit}
               </div>
               <div className="text-xs text-gray-600 mt-1">
-                {getRationaleText(product.priceSuggestion.rationaleId)} — confidence{' '}
+                {product.priceSuggestion.rationale || getRationaleText(product.priceSuggestion.rationaleId)} — confidence{' '}
                 {Math.round(product.priceSuggestion.confidence * 100)}%
+                {product.priceSuggestion.source === 'API' && (
+                  <span className="ml-1 text-green-600 font-medium">● Live</span>
+                )}
               </div>
+              {product.priceSuggestion.minPrice != null && product.priceSuggestion.maxPrice != null && (
+                <div className="text-xs text-gray-500 mt-1">
+                  Market range: ₹{product.priceSuggestion.minPrice} – ₹{product.priceSuggestion.maxPrice}
+                  {product.priceSuggestion.msp != null && ` | MSP: ₹${product.priceSuggestion.msp}`}
+                  {product.priceSuggestion.trend && ` | Trend: ${product.priceSuggestion.trend}`}
+                </div>
+              )}
             </div>
           )}
 
