@@ -95,6 +95,32 @@ const OrderSchema = new mongoose.Schema({
     trim: true
   },
   
+  // === DELIVERY ADDRESS (set by consumer at checkout) ===
+  deliveryAddress: {
+    label: { type: String, trim: true, default: 'Home' },
+    address: { type: String, trim: true },
+    coordinates: {
+      lat: { type: Number, min: -90, max: 90 },
+      lng: { type: Number, min: -180, max: 180 }
+    }
+  },
+  
+  // === PICKUP LOCATION (from farmer's saved locations) ===
+  pickupLocation: {
+    label: { type: String, trim: true, default: 'Farm' },
+    address: { type: String, trim: true },
+    coordinates: {
+      lat: { type: Number, min: -90, max: 90 },
+      lng: { type: Number, min: -180, max: 180 }
+    }
+  },
+  
+  // === ASSIGNED DRIVER (for smart assignment) ===
+  assignedDriverId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  
   // Resilience fields for offline support
   lastUpdatedByRole: {
     type: String,

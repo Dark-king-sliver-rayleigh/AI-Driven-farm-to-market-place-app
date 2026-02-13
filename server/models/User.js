@@ -77,6 +77,53 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  
+  // === LOCATION FIELDS (all roles) ===
+  
+  // Primary location for the user (farm location / home / hub)
+  location: {
+    address: { type: String, trim: true, default: '' },
+    coordinates: {
+      lat: { type: Number, min: -90, max: 90 },
+      lng: { type: Number, min: -180, max: 180 }
+    },
+    updatedAt: { type: Date }
+  },
+  
+  // === FARMER-SPECIFIC: Multiple pickup points ===
+  pickupLocations: [{
+    label: { type: String, trim: true, default: 'Farm' },
+    address: { type: String, trim: true, required: true },
+    coordinates: {
+      lat: { type: Number, required: true, min: -90, max: 90 },
+      lng: { type: Number, required: true, min: -180, max: 180 }
+    },
+    isDefault: { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now }
+  }],
+  
+  // === CONSUMER-SPECIFIC: Saved delivery addresses ===
+  deliveryAddresses: [{
+    label: { type: String, trim: true, default: 'Home' },
+    address: { type: String, trim: true, required: true },
+    coordinates: {
+      lat: { type: Number, required: true, min: -90, max: 90 },
+      lng: { type: Number, required: true, min: -180, max: 180 }
+    },
+    isDefault: { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now }
+  }],
+  
+  // === LOGISTICS-SPECIFIC: Real-time current location ===
+  currentLocation: {
+    coordinates: {
+      lat: { type: Number, min: -90, max: 90 },
+      lng: { type: Number, min: -180, max: 180 }
+    },
+    updatedAt: { type: Date },
+    heading: { type: Number, min: 0, max: 360 }
+  },
+  
   createdAt: {
     type: Date,
     default: Date.now

@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
+﻿import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
 // Import integrated pages (API-connected)
@@ -20,12 +20,22 @@ import { LogisticsProfile } from './pages/integrated/LogisticsProfile'
 import { LogisticsEarnings } from './pages/integrated/LogisticsEarnings'
 import { ConsumerOrderTracking } from './pages/integrated/ConsumerOrderTracking'
 
+// Import new feature pages
+import { RoutePlanningPage } from './pages/integrated/RoutePlanningPage'
+import { RouteDetailPage } from './pages/integrated/RouteDetailPage'
+import { KPIDashboardPage } from './pages/integrated/KPIDashboardPage'
+import { PlatformPricesPage } from './pages/integrated/PlatformPricesPage'
+import { DemandForecastPage } from './pages/integrated/DemandForecastPage'
+
 // Import farmer components
 import { AddProductEnhanced } from './components/farmer/AddProductEnhanced'
 
 // Import auth pages
 import { Login } from './pages/Login'
 import { Register } from './pages/Register'
+
+// Import AI components
+import AIChatWidget from './components/AIChatWidget'
 
 /**
  * Navigation component for Farmer
@@ -35,10 +45,12 @@ function FarmerNavigation() {
   const { logout } = useAuth()
 
   const navItems = [
-    { path: '/farmer/home', label: '🏠 Home' },
-    { path: '/farmer/dashboard', label: '📦 Inventory' },
-    { path: '/farmer/add-product', label: '➕ Add' },
-    { path: '/farmer/settings', label: '⚙️ Settings' },
+    { path: '/farmer/home', label: '\u{1F3E0} Home' },
+    { path: '/farmer/dashboard', label: '\u{1F4E6} Inventory' },
+    { path: '/farmer/add-product', label: '\u2795 Add' },
+    { path: '/farmer/prices', label: '\u{1F4B0} Prices' },
+    { path: '/farmer/forecast', label: '\u{1F4C8} Forecast' },
+    { path: '/farmer/settings', label: '\u2699\uFE0F Settings' },
   ]
 
   return (
@@ -80,9 +92,9 @@ function ConsumerNavigation() {
   const location = useLocation()
 
   const navItems = [
-    { path: '/consumer/home', label: '🏠 Home' },
-    { path: '/consumer/orders', label: '📦 Orders' },
-    { path: '/consumer/profile', label: '👤 Profile' },
+    { path: '/consumer/home', label: '\u{1F3E0} Home' },
+    { path: '/consumer/orders', label: '\u{1F4E6} Orders' },
+    { path: '/consumer/profile', label: '\u{1F464} Profile' },
   ]
 
   return (
@@ -244,6 +256,7 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
+      <AIChatWidget />
       
       <main>
         <Routes>
@@ -302,6 +315,22 @@ function AppContent() {
             element={
               <FarmerRoute>
                 <CategoryInsightsPage />
+              </FarmerRoute>
+            }
+          />
+          <Route
+            path="/farmer/prices"
+            element={
+              <FarmerRoute>
+                <PlatformPricesPage />
+              </FarmerRoute>
+            }
+          />
+          <Route
+            path="/farmer/forecast"
+            element={
+              <FarmerRoute>
+                <DemandForecastPage />
               </FarmerRoute>
             }
           />
@@ -413,6 +442,30 @@ function AppContent() {
             element={
               <LogisticsRoute>
                 <LogisticsEarnings />
+              </LogisticsRoute>
+            }
+          />
+          <Route
+            path="/logistics/routes"
+            element={
+              <LogisticsRoute>
+                <RoutePlanningPage />
+              </LogisticsRoute>
+            }
+          />
+          <Route
+            path="/logistics/routes/:id"
+            element={
+              <LogisticsRoute>
+                <RouteDetailPage />
+              </LogisticsRoute>
+            }
+          />
+          <Route
+            path="/logistics/kpi"
+            element={
+              <LogisticsRoute>
+                <KPIDashboardPage />
               </LogisticsRoute>
             }
           />

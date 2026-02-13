@@ -8,11 +8,16 @@
     "dev": "node --watch server.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.0.3"
+    "ml-matrix": "^6.12.1",
+    "ml-regression": "^6.3.0",
+    "mongoose": "^8.0.3",
+    "node-cron": "^4.2.1",
+    "simple-statistics": "^7.8.8"
   }
 }

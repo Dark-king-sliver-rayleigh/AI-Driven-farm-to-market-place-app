@@ -47,6 +47,30 @@ const FeedbackSchema = new mongoose.Schema({
     type: Number,
     min: 1,
     max: 5
+  },
+  // === AI SENTIMENT ANALYSIS FIELDS ===
+  sentiment: {
+    type: String,
+    enum: ['POSITIVE', 'NEUTRAL', 'NEGATIVE'],
+    default: null
+  },
+  sentimentScore: {
+    type: Number,
+    min: 0,
+    max: 1,
+    default: null
+  },
+  themes: {
+    type: [String],
+    default: []
+  },
+  sentimentSummary: {
+    type: String,
+    default: ''
+  },
+  sentimentMethodology: {
+    type: String,
+    default: ''
   }
 }, { 
   timestamps: true 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { profileAPI } from '../../services/api';
+import { FarmerPickupManager } from '../../components/integrated/FarmerPickupManager';
 
 /**
  * Farmer Profile Page
@@ -256,6 +257,11 @@ export function FarmerProfilePage() {
           )}
         </button>
       </form>
+
+      {/* Pickup Locations Section */}
+      <div className="mt-8">
+        <FarmerPickupManager />
+      </div>
     </div>
   );
 }

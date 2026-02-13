@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { profileAPI } from '../../services/api';
+import { ConsumerAddressManager } from '../../components/integrated/ConsumerAddressManager';
 
 /**
  * Consumer Profile Page
@@ -319,34 +320,14 @@ export function ConsumerProfile() {
                   {!isEditing && <span className="text-2xl opacity-50 ml-4">👤</span>}
                 </div>
                 
-                {/* Phone Field */}
+                {/* Phone Number (read-only - used for login) */}
                 <div className="flex items-center justify-between py-3 border-b border-gray-100">
                   <div className="flex-1">
-                    <p className="text-sm text-gray-500 mb-1">Mobile Number</p>
-                    {isEditing ? (
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter your phone number"
-                      />
-                    ) : (
-                      <p className="text-lg font-medium text-gray-900">{displayUser.phone || '—'}</p>
-                    )}
+                    <p className="text-sm text-gray-500 mb-1">Phone Number</p>
+                    <p className="text-lg font-medium text-gray-900">{displayUser.phone || '—'}</p>
+                    {isEditing && <p className="text-xs text-gray-400 mt-1">Phone number cannot be changed (used for login)</p>}
                   </div>
-                  {!isEditing && <span className="text-2xl opacity-50 ml-4">📱</span>}
-                </div>
-
-                {/* Email Field (read-only) */}
-                <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-500 mb-1">Email Address</p>
-                    <p className="text-lg font-medium text-gray-900">{displayUser.email || '—'}</p>
-                    {isEditing && <p className="text-xs text-gray-400 mt-1">Email cannot be changed</p>}
-                  </div>
-                  <span className="text-2xl opacity-50 ml-4">✉️</span>
+                  <span className="text-2xl opacity-50 ml-4">📱</span>
                 </div>
 
                 {/* Address Field */}
@@ -413,6 +394,13 @@ export function ConsumerProfile() {
                   </div>
                   <span className="ml-auto text-gray-400">→</span>
                 </button>
+              </div>
+            </div>
+
+            {/* Delivery Addresses */}
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div className="p-6">
+                <ConsumerAddressManager />
               </div>
             </div>
 

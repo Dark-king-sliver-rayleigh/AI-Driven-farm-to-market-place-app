@@ -1,6 +1,7 @@
 const Feedback = require('../models/Feedback');
 const Order = require('../models/Order');
 const Delivery = require('../models/Delivery');
+const SentimentService = require('../services/SentimentService');
 
 /**
  * @desc    Submit feedback for an order
@@ -71,6 +72,30 @@ const submitFeedback = async (req, res) => {
       farmerRating: farmerRating || rating,
       logisticsRating: logisticsRating || rating
     });
+
+    // ═══════════════════════════════════════════
+    // AI: Asynchronous Sentiment Analysis
+    // Runs after response is sent so it doesn't block the user
+    // ═══════════════════════════════════════════
+    if (comment && comment.trim()) {
+      // Don't await - run in background
+      SentimentService.analyze(comment).then(async (sentimentResult) => {
+        try {
+          await Feedback.findByIdAndUpdate(feedback._id, {
+            sentiment: sentimentResult.sentiment,
+            sentimentScore: sentimentResult.score,
+            themes: sentimentResult.themes,
+            sentimentSummary: sentimentResult.summary,
+            sentimentMethodology: sentimentResult.methodology
+          });
+          console.log(`[FeedbackController] Sentiment analysis complete for feedback ${feedback._id}: ${sentimentResult.sentiment}`);
+        } catch (err) {
+          console.error('[FeedbackController] Failed to save sentiment:', err.message);
+        }
+      }).catch(err => {
+        console.error('[FeedbackController] Sentiment analysis failed:', err.message);
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -190,9 +215,78 @@ const getOrderFeedback = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Get AI sentiment analytics for farmer's feedback
+ * @route   GET /api/farmer/feedback/sentiment
+ * @access  Private (FARMER only)
+ */
+const getSentimentAnalytics = async (req, res) => {
+  try {
+    const feedback = await Feedback.find({ 
+      farmerId: req.user._id,
+      comment: { $exists: true, $ne: '' }
+    }).select('comment sentiment sentimentScore themes sentimentSummary sentimentMethodology rating createdAt');
+
+    // If any feedback lacks sentiment, analyze them now
+    const unanalyzed = feedback.filter(f => !f.sentiment && f.comment);
+    if (unanalyzed.length > 0) {
+      const batchResult = await SentimentService.batchAnalyze(
+        unanalyzed.map(f => ({ id: f._id.toString(), text: f.comment }))
+      );
+      
+      // Update unanalyzed feedback with sentiment results
+      for (const result of batchResult.individual) {
+        await Feedback.findByIdAndUpdate(result.id, {
+          sentiment: result.sentiment,
+          sentimentScore: result.score,
+          themes: result.themes,
+          sentimentSummary: result.summary,
+          sentimentMethodology: result.methodology
+        });
+      }
+    }
+
+    // Re-fetch with updated sentiment data
+    const updatedFeedback = await Feedback.find({ 
+      farmerId: req.user._id,
+      comment: { $exists: true, $ne: '' }
+    }).select('sentiment sentimentScore themes sentimentSummary rating createdAt');
+
+    // Compute aggregate stats
+    const withSentiment = updatedFeedback.filter(f => f.sentiment);
+    const distribution = { POSITIVE: 0, NEUTRAL: 0, NEGATIVE: 0 };
+    const allThemes = {};
+    let totalScore = 0;
+
+    for (const fb of withSentiment) {
+      distribution[fb.sentiment] = (distribution[fb.sentiment] || 0) + 1;
+      totalScore += fb.sentimentScore || 0;
+      (fb.themes || []).forEach(t => { allThemes[t] = (allThemes[t] || 0) + 1; });
+    }
+
+    res.json({
+      success: true,
+      total: withSentiment.length,
+      averageSentimentScore: withSentiment.length > 0 ? Math.round((totalScore / withSentiment.length) * 100) / 100 : null,
+      overallSentiment: totalScore / Math.max(withSentiment.length, 1) >= 0.6 ? 'POSITIVE' : 
+                        totalScore / Math.max(withSentiment.length, 1) <= 0.4 ? 'NEGATIVE' : 'NEUTRAL',
+      distribution,
+      topThemes: Object.entries(allThemes).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([theme, count]) => ({ theme, count })),
+      feedback: withSentiment
+    });
+  } catch (error) {
+    console.error('Sentiment analytics error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching sentiment analytics'
+    });
+  }
+};
+
 module.exports = {
   submitFeedback,
   getFarmerFeedback,
   getLogisticsFeedback,
-  getOrderFeedback
+  getOrderFeedback,
+  getSentimentAnalytics
 };

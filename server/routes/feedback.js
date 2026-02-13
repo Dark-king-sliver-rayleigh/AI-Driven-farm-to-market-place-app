@@ -4,7 +4,8 @@ const {
   submitFeedback,
   getFarmerFeedback,
   getLogisticsFeedback,
-  getOrderFeedback
+  getOrderFeedback,
+  getSentimentAnalytics
 } = require('../controllers/feedbackController');
 const { authenticateUser, authorizeRoles } = require('../middleware/auth');
 
@@ -22,5 +23,8 @@ router.get('/farmer/all', authorizeRoles('FARMER'), getFarmerFeedback);
 
 // Logistics views their feedback
 router.get('/logistics/all', authorizeRoles('LOGISTICS'), getLogisticsFeedback);
+
+// AI Sentiment analytics for farmer
+router.get('/farmer/sentiment', authorizeRoles('FARMER'), getSentimentAnalytics);
 
 module.exports = router;

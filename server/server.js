@@ -58,9 +58,17 @@ app.use('/api/farmer', require('./routes/priceInsight'));  // Price Intelligence
 app.use('/api', require('./routes/orders'));
 app.use('/api/logistics', require('./routes/logistics'));
 app.use('/api/logistics/tracking', require('./routes/tracking'));  // Real-time Tracking
+app.use('/api/logistics/routes', require('./routes/routePlan'));   // Route Planning
+app.use('/api/logistics/kpi', require('./routes/kpi'));            // Logistics KPIs
 app.use('/api/payments', require('./routes/payments'));  // Mock UPI Payments
 app.use('/api/notifications', require('./routes/notifications'));  // Notifications
 app.use('/api/feedback', require('./routes/feedback'));  // Feedback & Ratings
+app.use('/api/farmer', require('./routes/demandForecast'));  // Demand Forecasting
+app.use('/api/location', require('./routes/location'));  // Location Management
+
+// === AI Feature Routes ===
+app.use('/api/crop-recommendation', require('./routes/cropRecommendation'));  // AI Crop Recommendations
+app.use('/api/chatbot', require('./routes/chatbot'));  // AI Chatbot
 
 // Dashboard routes (simple info endpoints)
 app.get('/api/farmer/dashboard', 

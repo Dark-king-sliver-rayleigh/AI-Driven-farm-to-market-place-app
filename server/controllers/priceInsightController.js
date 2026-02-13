@@ -206,10 +206,13 @@ const getCommoditiesByCategory = async (req, res) => {
         const mandi = mandis[0];
         const insight = await PriceInsightService.getInsight(commodity, mandi);
         
+        // Show all commodities that have any price data, regardless of freshness tier.
+        // Freshness/confidence metadata is already included so the UI can
+        // communicate data quality to the user without hiding commodities entirely.
         return {
           commodity,
           mandi,
-          hasData: insight.success && insight.suggestedPrice !== null,
+          hasData: insight.suggestedPrice !== null,
           ...insight
         };
       } catch {

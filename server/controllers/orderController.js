@@ -2,6 +2,7 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const Delivery = require('../models/Delivery');
 const Notification = require('../models/Notification');
+const User = require('../models/User');
 const mongoose = require('mongoose');
 
 /**
@@ -14,7 +15,7 @@ const mongoose = require('mongoose');
  */
 const createOrder = async (req, res) => {
   try {
-    const { items, paymentMode } = req.body;
+    const { items, paymentMode, deliveryAddress } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
@@ -129,13 +130,40 @@ const createOrder = async (req, res) => {
 
     // Create order - mark as PRE_ORDER if any items are pre-order
     const orderStatus = hasPreOrderItems ? 'PRE_ORDER' : 'CREATED';
+    
+    // Get farmer's default pickup location
+    const farmerUser = await User.findById(farmerId).select('pickupLocations location');
+    const defaultPickup = farmerUser?.pickupLocations?.find(l => l.isDefault) || 
+                          farmerUser?.pickupLocations?.[0] || null;
+    
+    // Get consumer's delivery address (from request or saved default)
+    let orderDeliveryAddress = deliveryAddress || null;
+    if (!orderDeliveryAddress) {
+      const consumerUser = await User.findById(req.user._id).select('deliveryAddresses location');
+      const defaultAddr = consumerUser?.deliveryAddresses?.find(a => a.isDefault) ||
+                          consumerUser?.deliveryAddresses?.[0] || null;
+      if (defaultAddr) {
+        orderDeliveryAddress = {
+          label: defaultAddr.label,
+          address: defaultAddr.address,
+          coordinates: defaultAddr.coordinates
+        };
+      }
+    }
+    
     const order = await Order.create({
       consumerId: req.user._id,
       farmerId,
       items: orderItems,
       totalAmount,
       paymentMode,
-      orderStatus
+      orderStatus,
+      deliveryAddress: orderDeliveryAddress,
+      pickupLocation: defaultPickup ? {
+        label: defaultPickup.label,
+        address: defaultPickup.address,
+        coordinates: defaultPickup.coordinates
+      } : null
     });
 
     // Notify farmer of new order

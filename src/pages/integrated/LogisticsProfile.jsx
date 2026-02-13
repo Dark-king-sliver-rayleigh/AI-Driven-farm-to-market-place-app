@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { profileAPI } from '../../services/api';
+import { DriverLocationPanel } from '../../components/integrated/DriverLocationPanel';
 
 /**
  * Logistics Profile Page
@@ -350,6 +351,14 @@ export function LogisticsProfile() {
                 <span className="font-medium text-gray-900">Delivery History</span>
                 <span className="ml-auto text-gray-400">→</span>
               </button>
+            </div>
+
+            {/* Location & GPS Tracking */}
+            <div className="bg-white rounded-xl shadow-sm p-4">
+              <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                <span>📍</span> GPS Location Tracking
+              </h3>
+              <DriverLocationPanel />
             </div>
 
             {/* Logout */}

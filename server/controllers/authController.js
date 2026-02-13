@@ -161,6 +161,11 @@ const getMe = async (req, res) => {
         address: user.address || '',
         farmArea: user.farmArea || '',
         profilePhoto: user.profilePhoto || '',
+        // Location fields
+        location: user.location || null,
+        pickupLocations: user.pickupLocations || [],
+        deliveryAddresses: user.deliveryAddresses || [],
+        currentLocation: user.currentLocation || null,
         // Logistics-specific fields
         vehicleType: user.vehicleType || 'BIKE',
         vehicleNumber: user.vehicleNumber || '',
@@ -187,14 +192,17 @@ const getMe = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const { 
-      name, address, farmArea, profilePhoto,
+      name, phone, address, farmArea, profilePhoto,
       // Logistics-specific fields
-      vehicleType, vehicleNumber, loadCapacity, serviceArea, isAvailable
+      vehicleType, vehicleNumber, loadCapacity, serviceArea, isAvailable,
+      // Location fields
+      location, pickupLocations, deliveryAddresses
     } = req.body;
 
     // Build update object with only provided fields
     const updateFields = {};
     if (name !== undefined) updateFields.name = name.trim();
+    if (phone !== undefined) updateFields.phone = phone.trim();
     if (address !== undefined) updateFields.address = address.trim();
     if (farmArea !== undefined) updateFields.farmArea = farmArea.trim();
     if (profilePhoto !== undefined) updateFields.profilePhoto = profilePhoto;
@@ -205,6 +213,9 @@ const updateProfile = async (req, res) => {
     if (loadCapacity !== undefined) updateFields.loadCapacity = Number(loadCapacity) || 0;
     if (serviceArea !== undefined) updateFields.serviceArea = serviceArea.trim();
     if (isAvailable !== undefined) updateFields.isAvailable = Boolean(isAvailable);
+    
+    // Location fields
+    if (location !== undefined) updateFields.location = location;
 
     // Update user
     const user = await User.findByIdAndUpdate(
@@ -231,6 +242,11 @@ const updateProfile = async (req, res) => {
         address: user.address || '',
         farmArea: user.farmArea || '',
         profilePhoto: user.profilePhoto || '',
+        // Location fields
+        location: user.location || null,
+        pickupLocations: user.pickupLocations || [],
+        deliveryAddresses: user.deliveryAddresses || [],
+        currentLocation: user.currentLocation || null,
         // Logistics-specific fields
         vehicleType: user.vehicleType || 'BIKE',
         vehicleNumber: user.vehicleNumber || '',

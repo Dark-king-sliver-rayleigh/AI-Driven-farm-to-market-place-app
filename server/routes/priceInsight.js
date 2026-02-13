@@ -1,12 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { 
+const {
   getPriceInsight,
   getAvailableCommodities,
   getAvailableMandis,
   getCategories,
   getCommoditiesByCategory
 } = require('../controllers/priceInsightController');
+const {
+  getPlatformPrices,
+  comparePrices
+} = require('../controllers/platformPriceController');
 const { authenticateUser, authorizeRoles } = require('../middleware/auth');
 
 /**
@@ -59,6 +63,22 @@ router.get('/price-insight/categories', getCategories);
  * Get commodities and insights for a specific category
  */
 router.get('/price-insight/categories/:categoryId', getCommoditiesByCategory);
+
+/**
+ * GET /api/farmer/platform-prices
+ * Platform price aggregator — realized prices from marketplace orders
+ *
+ * Query params: commodity (required), from (optional), to (optional)
+ */
+router.get('/platform-prices', getPlatformPrices);
+
+/**
+ * GET /api/farmer/price-insight/compare
+ * Compare platform price vs mandi (government market) price
+ *
+ * Query params: commodity (required), mandi (required), from (optional), to (optional)
+ */
+router.get('/price-insight/compare', comparePrices);
 
 module.exports = router;
 

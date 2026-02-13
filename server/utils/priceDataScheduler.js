@@ -14,6 +14,7 @@ const MandiPriceService = require('../services/MandiPriceService');
 const VarietyPriceService = require('../services/VarietyPriceService');
 const DataPruningService = require('../services/DataPruningService');
 const DataFreshnessService = require('../services/DataFreshnessService');
+const DemandForecastService = require('../services/DemandForecastService');
 
 class PriceDataScheduler {
   constructor() {
@@ -21,8 +22,10 @@ class PriceDataScheduler {
     this.isRunning = false;
     this.fetchTimer = null;
     this.pruneTimer = null;
+    this.forecastTimer = null;
     this.lastFetchTime = null;
     this.lastPruneTime = null;
+    this.lastForecastTime = null;
   }
 
   /**
@@ -44,6 +47,7 @@ class PriceDataScheduler {
     // Schedule recurring tasks
     this._scheduleDailyFetch();
     this._scheduleDailyPrune();
+    this._scheduleDailyForecast();
 
     console.log(`[PriceDataScheduler] Scheduler started. Fetch interval: ${this.fetchIntervalHours} hours`);
   }
@@ -64,6 +68,11 @@ class PriceDataScheduler {
     if (this.pruneTimer) {
       clearInterval(this.pruneTimer);
       this.pruneTimer = null;
+    }
+
+    if (this.forecastTimer) {
+      clearInterval(this.forecastTimer);
+      this.forecastTimer = null;
     }
 
     console.log('[PriceDataScheduler] Scheduler stopped');
@@ -195,23 +204,57 @@ class PriceDataScheduler {
 
   /**
    * Execute data pruning
+   * Uses smart pruning to preserve historical data for commodities without fresh updates
    * @private
    */
   async _executePrune() {
-    console.log('[PriceDataScheduler] Executing scheduled data pruning...');
+    console.log('[PriceDataScheduler] Executing scheduled smart data pruning...');
     this.lastPruneTime = new Date();
 
     try {
-      const result = await DataPruningService.pruneOldRecords();
-      
+      // Use smart pruning: only prune old data for commodities that have fresh data
+      // Preserves historical data for commodities without recent updates
+      const result = await DataPruningService.smartPruneOldRecords();
+
       if (result.success) {
-        console.log(`[PriceDataScheduler] Pruning complete: ${result.recordsDeleted} records removed`);
+        console.log(`[PriceDataScheduler] Smart pruning complete: ${result.recordsDeleted} records removed, ${result.combinationsPreserved} commodity+mandi combinations preserved (no fresh data)`);
       } else {
-        console.error('[PriceDataScheduler] Pruning failed:', result.error);
+        console.error('[PriceDataScheduler] Smart pruning failed:', result.error);
       }
 
     } catch (error) {
       console.error('[PriceDataScheduler] Pruning error:', error.message);
+    }
+  }
+
+  /**
+   * Schedule daily demand forecast generation (every 24 hours)
+   * @private
+   */
+  _scheduleDailyForecast() {
+    const intervalMs = 24 * 60 * 60 * 1000;
+
+    this.forecastTimer = setInterval(async () => {
+      if (!this.isRunning) return;
+      await this._executeForecast();
+    }, intervalMs);
+
+    console.log('[PriceDataScheduler] Demand forecast scheduled every 24 hours');
+  }
+
+  /**
+   * Execute demand forecast generation for all active commodities
+   * @private
+   */
+  async _executeForecast() {
+    console.log('[PriceDataScheduler] Executing scheduled demand forecast generation...');
+    this.lastForecastTime = new Date();
+
+    try {
+      const result = await DemandForecastService.generateAllForecasts();
+      console.log(`[PriceDataScheduler] Forecast complete: ${result.generated} generated, ${result.failed} failed`);
+    } catch (error) {
+      console.error('[PriceDataScheduler] Forecast error:', error.message);
     }
   }
 
@@ -254,12 +297,32 @@ class PriceDataScheduler {
   }
 
   /**
-   * Manually trigger data pruning
-   * @returns {Promise<Object>} Prune result
+   * Manually trigger smart data pruning
+   * Preserves historical data for commodities without fresh updates
+   * @returns {Promise<Object>} Smart prune result
    */
   async triggerPrune() {
-    console.log('[PriceDataScheduler] Manual prune triggered');
+    console.log('[PriceDataScheduler] Manual smart prune triggered');
+    return await DataPruningService.smartPruneOldRecords();
+  }
+
+  /**
+   * Manually trigger aggressive prune (removes ALL old data regardless of freshness)
+   * Use with caution - this will delete historical data
+   * @returns {Promise<Object>} Prune result
+   */
+  async triggerAggressivePrune() {
+    console.log('[PriceDataScheduler] Manual aggressive prune triggered (WARNING: removes all old data)');
     return await DataPruningService.pruneOldRecords();
+  }
+
+  /**
+   * Manually trigger demand forecast generation
+   * @returns {Promise<Object>} Forecast result
+   */
+  async triggerForecast() {
+    console.log('[PriceDataScheduler] Manual forecast generation triggered');
+    return await DemandForecastService.generateAllForecasts();
   }
 
   /**
@@ -272,6 +335,7 @@ class PriceDataScheduler {
       fetchIntervalHours: this.fetchIntervalHours,
       lastFetchTime: this.lastFetchTime,
       lastPruneTime: this.lastPruneTime,
+      lastForecastTime: this.lastForecastTime,
       apiKeyConfigured: !!process.env.DATA_GOV_API_KEY
     };
   }

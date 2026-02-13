@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore, actions } from '../store/index'
 import { formatCurrency } from '../utils/units'
+import { ConsumerAddressManager } from '../components/integrated/ConsumerAddressManager'
 
 export function Checkout() {
   const { state, dispatch } = useStore()
@@ -9,6 +10,7 @@ export function Checkout() {
   const [escrowConfirmed, setEscrowConfirmed] = useState(false)
   const [deliveryWindow, setDeliveryWindow] = useState('')
   const [deliveryConstraints, setDeliveryConstraints] = useState('')
+  const [selectedAddress, setSelectedAddress] = useState(null)
 
   const cartItems = state.cart
   const total = cartItems.reduce((sum, item) => sum + item.totalPrice, 0)
@@ -17,6 +19,11 @@ export function Checkout() {
   const handlePlaceOrder = () => {
     if (!escrowConfirmed) {
       alert('Please confirm the escrow terms to proceed')
+      return
+    }
+
+    if (!selectedAddress) {
+      alert('Please select a delivery address')
       return
     }
 
@@ -38,6 +45,7 @@ export function Checkout() {
         deliveryAudit: [],
         deliveryWindow,
         deliveryConstraints,
+        deliveryAddress: selectedAddress,
         createdAt: new Date().toISOString(),
       }
       actions.addOrder(dispatch, order)
@@ -74,6 +82,22 @@ export function Checkout() {
           <span>Total</span>
           <span>{formatCurrency(total, currency)}</span>
         </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6 mb-4">
+        <h2 className="text-lg font-semibold mb-4">Delivery Address</h2>
+        <ConsumerAddressManager
+          compact={true}
+          onSelect={(address) => setSelectedAddress(address)}
+        />
+        {selectedAddress && (
+          <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm">
+            <span className="font-medium text-green-700">✓ Delivering to:</span>{' '}
+            <span className="text-green-800">
+              {selectedAddress.label} — {selectedAddress.address}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-lg shadow p-6 mb-4">

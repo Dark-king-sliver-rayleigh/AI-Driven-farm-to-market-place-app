@@ -448,3 +448,185 @@ export const feedbackAPI = {
     return apiRequest(`/feedback/${orderId}`);
   }
 };
+
+// ============================================
+// ROUTE PLANNING API (Logistics only)
+// ============================================
+
+export const routePlanAPI = {
+  async createPlan(planData) {
+    return apiRequest('/logistics/routes/plan', {
+      method: 'POST',
+      body: JSON.stringify(planData)
+    });
+  },
+  async getPlans(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return apiRequest(`/logistics/routes${query ? '?' + query : ''}`);
+  },
+  async getPlanById(id) {
+    return apiRequest(`/logistics/routes/${id}`);
+  },
+  async assignDriver(id, driverId) {
+    return apiRequest(`/logistics/routes/${id}/assign`, {
+      method: 'POST',
+      body: JSON.stringify({ driverId })
+    });
+  },
+  async updateStopStatus(routeId, stopId, data) {
+    return apiRequest(`/logistics/routes/${routeId}/stops/${stopId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  }
+};
+
+// ============================================
+// KPI API (Logistics only)
+// ============================================
+
+export const kpiAPI = {
+  async getSummary(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return apiRequest(`/logistics/kpi/summary${query ? '?' + query : ''}`);
+  },
+  async getOnTime(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return apiRequest(`/logistics/kpi/on-time${query ? '?' + query : ''}`);
+  },
+  async getAvgDistance(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return apiRequest(`/logistics/kpi/avg-distance${query ? '?' + query : ''}`);
+  },
+  async getCapacityUtilization(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return apiRequest(`/logistics/kpi/capacity-utilization${query ? '?' + query : ''}`);
+  },
+  async getTimeSeries(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return apiRequest(`/logistics/kpi/time-series${query ? '?' + query : ''}`);
+  }
+};
+
+// ============================================
+// PLATFORM PRICE API (Farmer only)
+// ============================================
+
+export const platformPriceAPI = {
+  async getPrices(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return apiRequest(`/farmer/platform-prices${query ? '?' + query : ''}`);
+  },
+  async comparePrices(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return apiRequest(`/farmer/price-insight/compare${query ? '?' + query : ''}`);
+  }
+};
+
+// ============================================
+// DEMAND FORECAST API (Farmer only)
+// ============================================
+
+export const demandForecastAPI = {
+  async getForecast(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    return apiRequest(`/farmer/demand-forecast${query ? '?' + query : ''}`);
+  },
+  async generateForecast(data) {
+    return apiRequest('/farmer/demand-forecast/generate', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+};
+
+// ============================================
+// LOCATION API (All roles)
+// ============================================
+
+export const locationAPI = {
+  // === Primary Location (all roles) ===
+  async getPrimaryLocation() {
+    return apiRequest('/location/primary');
+  },
+  async updatePrimaryLocation(data) {
+    return apiRequest('/location/primary', {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  },
+
+  // === Farmer Pickup Locations ===
+  async getPickupLocations() {
+    return apiRequest('/location/pickup');
+  },
+  async addPickupLocation(data) {
+    return apiRequest('/location/pickup', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+  async updatePickupLocation(locationId, data) {
+    return apiRequest(`/location/pickup/${locationId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  },
+  async deletePickupLocation(locationId) {
+    return apiRequest(`/location/pickup/${locationId}`, {
+      method: 'DELETE'
+    });
+  },
+
+  // === Consumer Delivery Addresses ===
+  async getDeliveryAddresses() {
+    return apiRequest('/location/delivery-address');
+  },
+  async addDeliveryAddress(data) {
+    return apiRequest('/location/delivery-address', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+  async updateDeliveryAddress(addressId, data) {
+    return apiRequest(`/location/delivery-address/${addressId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  },
+  async deleteDeliveryAddress(addressId) {
+    return apiRequest(`/location/delivery-address/${addressId}`, {
+      method: 'DELETE'
+    });
+  },
+
+  // === Driver Location & Availability ===
+  async updateDriverLocation(data) {
+    return apiRequest('/location/driver/current', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+  async toggleDriverAvailability(isAvailable) {
+    return apiRequest('/location/driver/availability', {
+      method: 'PATCH',
+      body: JSON.stringify({ isAvailable })
+    });
+  },
+  async getDriverStatus() {
+    return apiRequest('/location/driver/status');
+  },
+
+  // === Smart Driver Assignment ===
+  async findNearestDrivers(data) {
+    return apiRequest('/location/find-drivers', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  // === Order Origin ===
+  async getOrderOrigin(orderId) {
+    return apiRequest(`/location/order/${orderId}/origin`);
+  }
+};

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useMyDeliveries, useNotifications } from '../../hooks/useData';
 import { logisticsAPI } from '../../services/api';
+import { DriverLocationPanel } from '../../components/integrated/DriverLocationPanel';
 
 /**
  * Logistics Home Page
@@ -83,7 +84,10 @@ export function LogisticsHome() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        {/* Top Quick Actions: Earnings & Available Orders */}
+        {/* Driver Location & Availability */}
+        <DriverLocationPanel />
+
+        {/* Top Quick Actions */}
         <div className="grid grid-cols-2 gap-4">
           <button
             onClick={() => navigate('/logistics/orders')}
@@ -98,6 +102,20 @@ export function LogisticsHome() {
           >
             <span className="text-3xl">💰</span>
             <span className="font-semibold text-lg">Earnings</span>
+          </button>
+          <button
+            onClick={() => navigate('/logistics/routes')}
+            className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-xl p-5 shadow-lg hover:shadow-xl transition-all flex flex-col items-center gap-3"
+          >
+            <span className="text-3xl">🗺️</span>
+            <span className="font-semibold text-lg">Route Planning</span>
+          </button>
+          <button
+            onClick={() => navigate('/logistics/kpi')}
+            className="bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-xl p-5 shadow-lg hover:shadow-xl transition-all flex flex-col items-center gap-3"
+          >
+            <span className="text-3xl">📊</span>
+            <span className="font-semibold text-lg">KPI Dashboard</span>
           </button>
         </div>
 
