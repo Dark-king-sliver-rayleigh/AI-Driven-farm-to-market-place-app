@@ -1,7 +1,6 @@
 /**
  * Seed data helper for demo purposes
  * Creates initial mock data for testing
- * Updated with new model fields: offline/SMS/Voice, escrow, price intelligence, delivery audit
  */
 
 export function seedData() {
@@ -51,7 +50,7 @@ export function seedData() {
     },
   ]
 
-  // --- Farmers with new fields ---
+  // --- Farmers ---
   const farmers = [
     {
       id: 'f1',
@@ -65,8 +64,7 @@ export function seedData() {
         avg: 4.5,
         count: 10,
       },
-      onboardingMethod: 'SMS',
-      pendingSyncCount: 1,
+      onboardingMethod: 'WEB',
     },
     {
       id: 'farmer-1',
@@ -81,11 +79,10 @@ export function seedData() {
         count: 10,
       },
       onboardingMethod: 'WEB',
-      pendingSyncCount: 0,
     },
   ]
 
-  // --- Products with new fields ---
+  // --- Products ---
   const products = [
     {
       id: 'p1',
@@ -102,9 +99,9 @@ export function seedData() {
         lng: 77.6,
       },
       status: 'AVAILABLE',
-      source: 'SMS',
+      source: 'WEB',
       lastSyncedAt: yesterday,
-      availabilityConfidence: 'MEDIUM',
+      availabilityConfidence: 'HIGH',
       priceSuggestion: {
         value: 26,
         currency: 'INR',
@@ -208,8 +205,6 @@ export function seedData() {
       totalPrice: 2000,
       currency: 'INR',
       status: 'PENDING_ASSIGNMENT',
-      paymentMethod: 'COD',
-      escrowStatus: 'HELD',
       negotiation: [],
       assignedLogisticsId: 'logistics-1',
       pickupLocation: {
@@ -234,8 +229,6 @@ export function seedData() {
       totalPrice: 600,
       currency: 'INR',
       status: 'ACCEPTED',
-      paymentMethod: 'ONLINE',
-      escrowStatus: 'HELD',
       negotiation: [],
       assignedLogisticsId: 'logistics-1',
       pickupLocation: {
@@ -262,8 +255,6 @@ export function seedData() {
       totalPrice: 1200,
       currency: 'INR',
       status: 'IN_TRANSIT',
-      paymentMethod: 'COD',
-      escrowStatus: 'HELD',
       negotiation: [],
       assignedLogisticsId: 'logistics-1',
       pickupLocation: {
@@ -327,7 +318,6 @@ export function seedData() {
         role: 'farmer',
       },
       notifications: [],
-      offlineQueue: [],
     },
   }
 }

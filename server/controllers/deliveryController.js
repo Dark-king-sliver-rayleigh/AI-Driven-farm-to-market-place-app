@@ -2,6 +2,39 @@ const Delivery = require('../models/Delivery');
 const Order = require('../models/Order');
 const Notification = require('../models/Notification');
 
+function toDeliveryLocation(location, fallbackLabel) {
+  if (!location?.address) {
+    return null;
+  }
+
+  return {
+    address: location.address,
+    coordinates: location.coordinates || undefined,
+    label: location.label || fallbackLabel
+  };
+}
+
+function calculateDistanceKm(fromCoordinates, toCoordinates) {
+  const hasFromCoords = Number.isFinite(fromCoordinates?.lat) && Number.isFinite(fromCoordinates?.lng);
+  const hasToCoords = Number.isFinite(toCoordinates?.lat) && Number.isFinite(toCoordinates?.lng);
+
+  if (!hasFromCoords || !hasToCoords) {
+    return 0;
+  }
+
+  const toRad = (value) => (value * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const latDistance = toRad(toCoordinates.lat - fromCoordinates.lat);
+  const lngDistance = toRad(toCoordinates.lng - fromCoordinates.lng);
+  const startLat = toRad(fromCoordinates.lat);
+  const endLat = toRad(toCoordinates.lat);
+
+  const a = Math.sin(latDistance / 2) ** 2 +
+    Math.cos(startLat) * Math.cos(endLat) * Math.sin(lngDistance / 2) ** 2;
+
+  return Number((2 * earthRadiusKm * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2));
+}
+
 /**
  * Delivery Controller - Enhanced Version
  * 
@@ -166,22 +199,6 @@ const getDelayedDeliveries = async (req, res) => {
 const acceptOrder = async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { pickupLocation, dropLocation, distance } = req.body;
-
-    // Validate required fields
-    if (!pickupLocation || !pickupLocation.address) {
-      return res.status(400).json({
-        success: false,
-        message: 'Pickup location with address is required'
-      });
-    }
-
-    if (!dropLocation || !dropLocation.address) {
-      return res.status(400).json({
-        success: false,
-        message: 'Drop location with address is required'
-      });
-    }
 
     // Find order
     const order = await Order.findById(orderId);
@@ -224,8 +241,28 @@ const acceptOrder = async (req, res) => {
       });
     }
 
+    const pickupLocation = toDeliveryLocation(order.pickupLocation, 'Farm');
+    const dropLocation = toDeliveryLocation(order.deliveryAddress, 'Delivery Address');
+
+    if (!pickupLocation) {
+      return res.status(400).json({
+        success: false,
+        message: 'This order does not have a valid pickup location. Ask the farmer to add a pickup address before assigning delivery.'
+      });
+    }
+
+    if (!dropLocation) {
+      return res.status(400).json({
+        success: false,
+        message: 'This order does not have a valid delivery address. Ask the consumer to add a delivery address before assigning delivery.'
+      });
+    }
+
+    const distance = calculateDistanceKm(pickupLocation.coordinates, dropLocation.coordinates);
+    const payout = Delivery.calculatePayout(distance, order.totalAmount);
+
     // Calculate expected delivery time based on distance
-    const expectedDeliveryTime = Delivery.calculateExpectedDeliveryTime(distance || 0);
+    const expectedDeliveryTime = Delivery.calculateExpectedDeliveryTime(distance);
 
     // Create delivery with audit trail
     const delivery = new Delivery({
@@ -234,6 +271,13 @@ const acceptOrder = async (req, res) => {
       pickupLocation,
       dropLocation,
       distance,
+      payoutAmount: payout.total,
+      payoutBreakdown: {
+        baseFee: payout.baseFee,
+        distanceFee: payout.distanceFee,
+        orderValueBonus: payout.orderValueBonus
+      },
+      earningStatus: 'PENDING',
       deliveryStatus: 'ASSIGNED',
       expectedDeliveryTime,
       lastUpdatedByRole: 'LOGISTICS',
@@ -253,6 +297,7 @@ const acceptOrder = async (req, res) => {
 
     // Update order status
     order.orderStatus = 'ASSIGNED';
+    order.assignedDriverId = req.user._id;
     order.lastUpdatedByRole = 'LOGISTICS';
     order.lastSyncedAt = new Date();
     await order.save();
@@ -444,6 +489,7 @@ const updateDeliveryStatus = async (req, res) => {
         performedBy: req.user._id,
         remarks: 'Delivery completed successfully'
       });
+      delivery.earningStatus = 'EARNED';
     }
 
     // If failed, add FAILED event
@@ -456,6 +502,7 @@ const updateDeliveryStatus = async (req, res) => {
         performedBy: req.user._id,
         remarks: remarks || 'Delivery failed'
       });
+      delivery.earningStatus = 'CANCELLED';
     }
 
     await delivery.save();

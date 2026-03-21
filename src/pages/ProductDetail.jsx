@@ -14,7 +14,6 @@ export function ProductDetail() {
   const [selection, setSelection] = useState({ quantity: 1, unit: 'kg' })
   const [error, setError] = useState('')
   const [showChat, setShowChat] = useState(false)
-  const [smsNotify, setSmsNotify] = useState(false)
   const [negotiationOffer, setNegotiationOffer] = useState('')
 
   const product = useMemo(
@@ -101,8 +100,26 @@ export function ProductDetail() {
             <div className="text-2xl font-bold text-green-600">
               {formatCurrency(product.pricePerUnit, product.currency)} / {product.unit}
             </div>
+            {/* Show converted price when a different unit is selected */}
+            {selection.unit && selection.unit !== product.unit && (() => {
+              try {
+                const factor = convertUnit(1, product.unit, selection.unit)
+                const convertedPrice = product.pricePerUnit / factor
+                return (
+                  <div className="text-base font-semibold text-primary-600 mt-1">
+                    ≈ {formatCurrency(convertedPrice, product.currency)} / {selection.unit}
+                  </div>
+                )
+              } catch { return null }
+            })()}
             <div className="text-sm text-gray-500 mt-1">
               Available: {product.quantity} {product.unit}
+              {selection.unit && selection.unit !== product.unit && (() => {
+                try {
+                  const converted = convertUnit(product.quantity, product.unit, selection.unit)
+                  return <span className="text-gray-400 ml-1">({Number.isInteger(converted) ? converted : converted.toFixed(2)} {selection.unit})</span>
+                } catch { return null }
+              })()}
             </div>
           </div>
 
@@ -203,23 +220,6 @@ export function ProductDetail() {
               </div>
             )}
 
-            {/* SMS Notification Toggle */}
-            <div className="mt-4">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={smsNotify}
-                  onChange={(e) => setSmsNotify(e.target.checked)}
-                  className="rounded"
-                />
-                <span className="text-sm text-gray-700">Notify me via SMS</span>
-              </label>
-              {smsNotify && (
-                <p className="text-xs text-gray-500 mt-1">
-                  TODO: Integrate real SMS gateway (Twilio/MSG91) and IVR parser for voice uploads
-                </p>
-              )}
-            </div>
           </div>
         </div>
       </div>

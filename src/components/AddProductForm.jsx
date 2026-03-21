@@ -1,9 +1,38 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '../store/index'
 import { addProduct } from '../store/actions'
-import { WEIGHT_UNITS, CURRENCIES } from '../utils/units'
+import { WEIGHT_UNITS, CURRENCIES, convertUnit, formatCurrency } from '../utils/units'
 import { fetchPriceSuggestion, getRationaleText } from '../services/priceEngine'
-import { enqueueOfflineAction, getPendingSyncCount } from '../store/index'
+import { LocationPicker } from './integrated/LocationPicker'
+
+// Show equivalent price in every other unit
+function PriceConversionHint({ pricePerUnit, unit, currency }) {
+  if (!pricePerUnit || parseFloat(pricePerUnit) <= 0) return null
+  const price = parseFloat(pricePerUnit)
+  const otherUnits = WEIGHT_UNITS.filter((u) => u !== unit)
+  const rows = []
+  for (const u of otherUnits) {
+    try {
+      const factor = convertUnit(1, unit, u)
+      const converted = price / factor
+      rows.push({ unit: u, price: converted })
+    } catch { /* skip */ }
+  }
+  if (rows.length === 0) return null
+  return (
+    <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md">
+      <p className="text-xs font-semibold text-amber-700 mb-2">💱 Price in other units</p>
+      <div className="grid grid-cols-3 gap-2">
+        {rows.map(({ unit: u, price: p }) => (
+          <div key={u} className="text-center bg-white border border-amber-100 rounded px-2 py-1">
+            <div className="text-sm font-bold text-gray-800">{formatCurrency(p, currency)}</div>
+            <div className="text-xs text-gray-500">/ {u}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 /**
  * Form component for adding new products
@@ -21,14 +50,14 @@ export function AddProductForm({ onSuccess }) {
     currency: 'INR',
     images: [],
     address: '',
+    pickupLat: '',
+    pickupLng: '',
     source: 'WEB',
   })
 
   const [errors, setErrors] = useState({})
   const [imagePreview, setImagePreview] = useState([])
   const [priceSuggestion, setPriceSuggestion] = useState(null)
-  const [isOffline, setIsOffline] = useState(false)
-  const [showVoiceModal, setShowVoiceModal] = useState(false)
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -63,29 +92,6 @@ export function AddProductForm({ onSuccess }) {
     }
   }
 
-  const handleVoiceUpload = () => {
-    setShowVoiceModal(true)
-    // TODO: Integrate real SMS gateway (Twilio/MSG91) and IVR parser for voice uploads
-    // Simulate voice parsing
-    setTimeout(() => {
-      // Mock parsed data
-      const mockParsed = {
-        name: 'Tomato',
-        quantity: '100',
-        unit: 'kg',
-        pricePerUnit: '25',
-        address: 'Near Demo Village',
-      }
-      setFormData(prev => ({
-        ...prev,
-        ...mockParsed,
-        quantity: mockParsed.quantity,
-        pricePerUnit: mockParsed.pricePerUnit,
-      }))
-      setShowVoiceModal(false)
-      updatePriceSuggestion()
-    }, 1500)
-  }
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files)
@@ -160,29 +166,19 @@ export function AddProductForm({ onSuccess }) {
       images: formData.images,
       location: {
         address: formData.address.trim(),
-        lat: 0,
-        lng: 0,
+        lat: Number(formData.pickupLat) || 0,
+        lng: Number(formData.pickupLng) || 0,
       },
-      status: isOffline ? 'ON_HOLD_OFFLINE' : 'AVAILABLE',
+      status: 'AVAILABLE',
       source: formData.source,
       lastSyncedAt: now,
-      availabilityConfidence: formData.source === 'WEB' ? 'HIGH' : formData.source === 'MOBILE' ? 'MEDIUM' : 'LOW',
+      availabilityConfidence: formData.source === 'WEB' ? 'HIGH' : 'MEDIUM',
       priceSuggestion: priceSuggestion || null,
       createdAt: now,
       updatedAt: now,
     }
 
-    if (isOffline) {
-      // Enqueue to offline queue
-      const actionId = enqueueOfflineAction(dispatch, {
-        type: 'PRODUCT_ADD',
-        payload: newProduct,
-      })
-      // Increment farmer sync count
-      dispatch({ type: 'FARMER_INCREMENT_SYNC_COUNT', payload: currentUser.id })
-    } else {
-      dispatch(addProduct(newProduct))
-    }
+    dispatch(addProduct(newProduct))
     
     // Reset form
     setFormData({
@@ -193,6 +189,8 @@ export function AddProductForm({ onSuccess }) {
       currency: 'INR',
       images: [],
       address: '',
+      pickupLat: '',
+      pickupLng: '',
       source: 'WEB',
     })
     setImagePreview([])
@@ -220,30 +218,7 @@ export function AddProductForm({ onSuccess }) {
           >
             <option value="WEB">Web</option>
             <option value="MOBILE">Mobile App</option>
-            <option value="SMS">SMS</option>
-            <option value="VOICE">Voice</option>
           </select>
-        </div>
-
-        {/* Voice Upload CTA */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleVoiceUpload}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-          >
-            <span className="text-xl">🎤</span>
-            <span>Voice Upload</span>
-          </button>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={isOffline}
-              onChange={(e) => setIsOffline(e.target.checked)}
-              className="rounded"
-            />
-            <span className="text-sm text-gray-600">Offline Mode</span>
-          </label>
         </div>
 
         {/* Crop Name */}
@@ -320,6 +295,11 @@ export function AddProductForm({ onSuccess }) {
               placeholder="40"
             />
             {errors.pricePerUnit && <p className="text-red-500 text-xs mt-1">{errors.pricePerUnit}</p>}
+            <PriceConversionHint
+              pricePerUnit={formData.pricePerUnit}
+              unit={formData.unit}
+              currency={formData.currency}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -428,18 +408,26 @@ export function AddProductForm({ onSuccess }) {
 
         {/* Location */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Pickup Address *
-          </label>
-          <textarea
-            name="address"
-            value={formData.address}
-            onChange={handleInputChange}
-            rows="2"
-            className={`w-full px-3 py-2 border rounded-md ${
-              errors.address ? 'border-red-500' : 'border-gray-300'
-            }`}
+          <LocationPicker
+            value={{
+              address: formData.address,
+              lat: formData.pickupLat,
+              lng: formData.pickupLng,
+            }}
+            onChange={(loc) => {
+              setFormData(prev => ({
+                ...prev,
+                address: loc.address || '',
+                pickupLat: loc.lat || '',
+                pickupLng: loc.lng || '',
+              }))
+              if (errors.address) {
+                setErrors(prev => ({ ...prev, address: null }))
+              }
+            }}
+            label="📍 Pickup Address *"
             placeholder="Farm Road, Village, Taluk, District"
+            showMap={true}
           />
           {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
         </div>
@@ -463,6 +451,8 @@ export function AddProductForm({ onSuccess }) {
                 currency: 'INR',
                 images: [],
                 address: '',
+                pickupLat: '',
+                pickupLng: '',
               })
               setImagePreview([])
               setErrors({})
@@ -474,28 +464,6 @@ export function AddProductForm({ onSuccess }) {
         </div>
       </form>
 
-      {/* Voice Upload Modal */}
-      {showVoiceModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold mb-4">Voice Upload</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Simulating voice parsing... This would integrate with IVR parser in production.
-            </p>
-            <div className="flex justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Offline Badge */}
-      {isOffline && (
-        <div className="mt-4 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
-          ⚠️ Offline mode: Product will be queued for sync. Pending sync count:{' '}
-          {getPendingSyncCount(state, currentUser?.id) || 0}
-        </div>
-      )}
     </div>
   )
 }

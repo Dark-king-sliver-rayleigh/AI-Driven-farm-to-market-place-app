@@ -131,18 +131,6 @@ export function Orders() {
                 </div>
               )}
 
-              {/* Escrow Status */}
-              {order.escrowStatus && (
-                <div className="mb-2">
-                  <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                    order.escrowStatus === 'HELD' ? 'bg-blue-100 text-blue-800' :
-                    order.escrowStatus === 'RELEASED' ? 'bg-green-100 text-green-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    Escrow: {order.escrowStatus}
-                  </span>
-                </div>
-              )}
 
               {/* Logistics Info */}
               {order.assignedLogisticsId && (

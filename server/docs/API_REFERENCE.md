@@ -147,7 +147,6 @@ Content-Type: application/json
     "unit": "kg",
     "price": 40,
     "status": "AVAILABLE",
-    "isOfflineCreated": false,
     "createdAt": "2025-12-19T09:00:00.000Z"
   }
 }
@@ -162,7 +161,7 @@ Authorization: Bearer <farmer_token>
 Content-Type: application/json
 
 {
-  "status": "ON_HOLD_OFFLINE"
+  "status": "PRE_ORDER"
 }
 ```
 
@@ -181,11 +180,11 @@ Content-Type: application/json
   "success": false,
   "error": {
     "code": "INVALID_TRANSITION",
-    "message": "Invalid status transition from NOT_HARVESTED to ON_HOLD_OFFLINE",
+    "message": "Invalid status transition from NOT_HARVESTED to PRE_ORDER",
     "details": {
       "currentStatus": "NOT_HARVESTED",
-      "requestedStatus": "ON_HOLD_OFFLINE",
-      "allowedTransitions": ["AVAILABLE", "PRE_ORDER"]
+      "requestedStatus": "PRE_ORDER",
+      "allowedTransitions": ["AVAILABLE"]
     }
   }
 }
@@ -339,17 +338,16 @@ GET /system/stats
 
 ### Product Status
 ```
-NOT_HARVESTED ──→ AVAILABLE ──→ ON_HOLD_OFFLINE
-      │              │                 │
-      ↓              ↓                 ↓
-  PRE_ORDER ←──── AVAILABLE ←──── (back to available)
+NOT_HARVESTED ──→ AVAILABLE
+      │              │
+      ↓              ↓
+  PRE_ORDER ←──── AVAILABLE
 ```
 
 Valid Transitions:
 - `NOT_HARVESTED` → `AVAILABLE`, `PRE_ORDER`
-- `AVAILABLE` → `NOT_HARVESTED`, `ON_HOLD_OFFLINE`, `PRE_ORDER`
+- `AVAILABLE` → `NOT_HARVESTED`, `PRE_ORDER`
 - `PRE_ORDER` → `AVAILABLE`, `NOT_HARVESTED`
-- `ON_HOLD_OFFLINE` → `AVAILABLE`
 
 ### Order Status
 ```

@@ -9,7 +9,8 @@ const {
 } = require('../controllers/priceInsightController');
 const {
   getPlatformPrices,
-  comparePrices
+  comparePrices,
+  getTradedCommodities
 } = require('../controllers/platformPriceController');
 const { authenticateUser, authorizeRoles } = require('../middleware/auth');
 
@@ -63,6 +64,12 @@ router.get('/price-insight/categories', getCategories);
  * Get commodities and insights for a specific category
  */
 router.get('/price-insight/categories/:categoryId', getCommoditiesByCategory);
+
+/**
+ * GET /api/farmer/platform-prices/commodities
+ * Get list of product names that have delivered orders (for dropdown)
+ */
+router.get('/platform-prices/commodities', getTradedCommodities);
 
 /**
  * GET /api/farmer/platform-prices

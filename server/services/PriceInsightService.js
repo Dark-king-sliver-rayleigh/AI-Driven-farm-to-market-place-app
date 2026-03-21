@@ -511,8 +511,9 @@ class PriceInsightService {
    * Get list of available mandis for a commodity
    */
   async getAvailableMandis(commodity) {
+    const escaped = commodity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const mandis = await MarketPrice.distinct('mandi', {
-      commodity: { $regex: new RegExp(commodity, 'i') }
+      commodity: { $regex: new RegExp(escaped, 'i') }
     });
     return mandis.sort();
   }

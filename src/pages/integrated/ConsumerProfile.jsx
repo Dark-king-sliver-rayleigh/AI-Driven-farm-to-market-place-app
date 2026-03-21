@@ -2,7 +2,19 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { profileAPI } from '../../services/api';
-import { ConsumerAddressManager } from '../../components/integrated/ConsumerAddressManager';
+import LocationPicker from '../../components/integrated/LocationPicker';
+
+/**
+ * Get stored user from sessionStorage as fallback
+ */
+function getStoredUser() {
+  try {
+    const stored = sessionStorage.getItem('authUser');
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Consumer Profile Page
@@ -29,41 +41,64 @@ export function ConsumerProfile() {
     name: '',
     phone: '',
     address: '',
-    profilePhoto: null
+    addressLat: null,
+    addressLng: null,
+    profilePhoto: null,
+    deliveryAddress: '',
+    deliveryLat: null,
+    deliveryLng: null,
   });
 
   // Fetch profile on mount
   useEffect(() => {
     async function fetchProfile() {
+      // Try to get a fallback user from context or sessionStorage
+      const fallbackUser = user || getStoredUser();
+
       try {
         setLoading(true);
         setError(null);
         const response = await profileAPI.getProfile();
-        setProfile(response.user);
-        // Initialize form data
+        const userData = response.user || {};
+        setProfile(userData);
         setFormData({
-          name: response.user?.name || '',
-          phone: response.user?.phone || '',
-          address: response.user?.address || response.user?.location || '',
-          profilePhoto: response.user?.profilePhoto || null
+          name: userData.name || '',
+          phone: userData.phone || '',
+          address: userData.address || userData.location || '',
+          addressLat: userData.addressLat ?? userData.location?.lat ?? null,
+          addressLng: userData.addressLng ?? userData.location?.lng ?? null,
+          profilePhoto: userData.profilePhoto || null,
+          deliveryAddress: userData.deliveryAddress || '',
+          deliveryLat: userData.deliveryLat ?? null,
+          deliveryLng: userData.deliveryLng ?? null,
         });
       } catch (err) {
-        setError(err.message);
-        // Initialize from user context if API fails
-        if (user) {
+        console.error('Profile fetch error:', err);
+        setError('Could not load profile from server. Showing local data.');
+        // Initialize from fallback user
+        if (fallbackUser) {
+          setProfile(fallbackUser);
           setFormData({
-            name: user.name || '',
-            phone: user.phone || '',
-            address: user.address || user.location || '',
-            profilePhoto: user.profilePhoto || null
+            name: fallbackUser.name || '',
+            phone: fallbackUser.phone || '',
+            address: fallbackUser.address || fallbackUser.location || '',
+            addressLat: fallbackUser.addressLat ?? null,
+            addressLng: fallbackUser.addressLng ?? null,
+            profilePhoto: fallbackUser.profilePhoto || null,
+            deliveryAddress: fallbackUser.deliveryAddress || '',
+            deliveryLat: fallbackUser.deliveryLat ?? null,
+            deliveryLng: fallbackUser.deliveryLng ?? null,
           });
+        } else {
+          // Even if no user data at all, set profile to empty object so page renders
+          setProfile({});
         }
       } finally {
         setLoading(false);
       }
     }
     fetchProfile();
-  }, [user]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogout = async () => {
     try {
@@ -122,7 +157,22 @@ export function ConsumerProfile() {
         name: formData.name,
         phone: formData.phone,
         address: formData.address,
-        profilePhoto: formData.profilePhoto
+        addressLat: formData.addressLat,
+        addressLng: formData.addressLng,
+        profilePhoto: formData.profilePhoto,
+        deliveryAddress: formData.deliveryAddress,
+        deliveryLat: formData.deliveryLat,
+        deliveryLng: formData.deliveryLng,
+        location: {
+          address: formData.address,
+          lat: formData.addressLat,
+          lng: formData.addressLng,
+        },
+        deliveryLocation: {
+          address: formData.deliveryAddress,
+          lat: formData.deliveryLat,
+          lng: formData.deliveryLng,
+        },
       });
       
       // Update local profile state
@@ -149,7 +199,12 @@ export function ConsumerProfile() {
       name: profile?.name || user?.name || '',
       phone: profile?.phone || user?.phone || '',
       address: profile?.address || profile?.location || user?.address || '',
-      profilePhoto: profile?.profilePhoto || user?.profilePhoto || null
+      addressLat: profile?.addressLat ?? null,
+      addressLng: profile?.addressLng ?? null,
+      profilePhoto: profile?.profilePhoto || user?.profilePhoto || null,
+      deliveryAddress: profile?.deliveryAddress || user?.deliveryAddress || '',
+      deliveryLat: profile?.deliveryLat ?? null,
+      deliveryLng: profile?.deliveryLng ?? null,
     });
     setIsEditing(false);
     setSaveError(null);
@@ -215,8 +270,8 @@ export function ConsumerProfile() {
         )}
 
         {/* Error */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-700">
+        {error && !loading && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-yellow-700">
             <p>{error}</p>
           </div>
         )}
@@ -331,25 +386,75 @@ export function ConsumerProfile() {
                 </div>
 
                 {/* Address Field */}
-                <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                <div className="py-3 border-b border-gray-100">
                   <div className="flex-1">
-                    <p className="text-sm text-gray-500 mb-1">Delivery Address</p>
+                    <p className="text-sm text-gray-500 mb-1">Address</p>
                     {isEditing ? (
-                      <textarea
-                        name="address"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                        placeholder="Enter your delivery address"
+                      <LocationPicker
+                        label=""
+                        placeholder="Search or pick your address on the map"
+                        value={{
+                          address: formData.address || '',
+                          lat: formData.addressLat,
+                          lng: formData.addressLng,
+                        }}
+                        onChange={({ address, lat, lng }) =>
+                          setFormData(prev => ({ ...prev, address: address || '', addressLat: lat, addressLng: lng }))
+                        }
+                        showMap
                       />
                     ) : (
-                      <p className="text-lg font-medium text-gray-900">
-                        {displayUser.address || displayUser.location || '—'}
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-lg font-medium text-gray-900">
+                            {displayUser.address || displayUser.location || '—'}
+                          </p>
+                          {formData.addressLat && formData.addressLng && (
+                            <p className="text-xs text-gray-400 mt-1">📍 {formData.addressLat.toFixed(5)}, {formData.addressLng.toFixed(5)}</p>
+                          )}
+                        </div>
+                        <span className="text-2xl opacity-50 ml-4">📍</span>
+                      </div>
                     )}
                   </div>
-                  {!isEditing && <span className="text-2xl opacity-50 ml-4">📍</span>}
+                </div>
+
+                {/* Delivery Location Section */}
+                <div className="py-3 border-b border-gray-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xl">🚩</span>
+                    <p className="text-sm font-semibold text-gray-800">Delivery Location</p>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3">Where should products be delivered?</p>
+
+                  {isEditing ? (
+                    <LocationPicker
+                      label=""
+                      placeholder="Search or pick delivery location on the map"
+                      value={{
+                        address: formData.deliveryAddress || '',
+                        lat: formData.deliveryLat,
+                        lng: formData.deliveryLng,
+                      }}
+                      onChange={({ address, lat, lng }) =>
+                        setFormData(prev => ({ ...prev, deliveryAddress: address || '', deliveryLat: lat, deliveryLng: lng }))
+                      }
+                      showMap
+                    />
+                  ) : (
+                    <div className="text-base text-gray-900">
+                      {formData.deliveryAddress ? (
+                        <div className="space-y-1">
+                          <p className="font-medium">{formData.deliveryAddress}</p>
+                          {formData.deliveryLat && formData.deliveryLng && (
+                            <p className="text-xs text-gray-400">📍 {formData.deliveryLat.toFixed(5)}, {formData.deliveryLng.toFixed(5)}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-gray-400 italic">No delivery location set. Edit profile to add one.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Account Type (read-only) */}
@@ -394,13 +499,6 @@ export function ConsumerProfile() {
                   </div>
                   <span className="ml-auto text-gray-400">→</span>
                 </button>
-              </div>
-            </div>
-
-            {/* Delivery Addresses */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div className="p-6">
-                <ConsumerAddressManager />
               </div>
             </div>
 

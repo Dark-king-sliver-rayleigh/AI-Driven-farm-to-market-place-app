@@ -138,6 +138,24 @@ const DeliverySchema = new mongoose.Schema({
     type: Number,
     min: [0, 'Distance cannot be negative']
   },
+  payoutAmount: {
+    type: Number,
+    min: [0, 'Payout cannot be negative'],
+    default: 0
+  },
+  payoutBreakdown: {
+    baseFee: { type: Number, default: 0 },
+    distanceFee: { type: Number, default: 0 },
+    orderValueBonus: { type: Number, default: 0 }
+  },
+  earningStatus: {
+    type: String,
+    enum: {
+      values: ['PENDING', 'EARNED', 'CANCELLED'],
+      message: 'Invalid earning status'
+    },
+    default: 'PENDING'
+  },
   
   // === SLA & DELAY TRACKING ===
   
@@ -235,6 +253,31 @@ DeliverySchema.statics.calculateExpectedDeliveryTime = function(distance = 0) {
   slaHours = Math.min(slaHours, 8);
   
   return new Date(now.getTime() + slaHours * 60 * 60 * 1000);
+};
+
+/**
+ * Calculate logistics payout from delivery workload.
+ * Keeps the formula explicit and deterministic for the UI and reports.
+ *
+ * @param {number} distance - Distance in km
+ * @param {number} orderTotal - Total order amount
+ * @returns {{ baseFee: number, distanceFee: number, orderValueBonus: number, total: number }}
+ */
+DeliverySchema.statics.calculatePayout = function(distance = 0, orderTotal = 0) {
+  const normalizedDistance = Math.max(0, Number(distance) || 0);
+  const normalizedOrderTotal = Math.max(0, Number(orderTotal) || 0);
+
+  const baseFee = 35;
+  const distanceFee = normalizedDistance * 4;
+  const orderValueBonus = normalizedOrderTotal * 0.03;
+  const total = Number((baseFee + distanceFee + orderValueBonus).toFixed(2));
+
+  return {
+    baseFee: Number(baseFee.toFixed(2)),
+    distanceFee: Number(distanceFee.toFixed(2)),
+    orderValueBonus: Number(orderValueBonus.toFixed(2)),
+    total
+  };
 };
 
 /**

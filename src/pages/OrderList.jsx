@@ -32,19 +32,6 @@ export function OrderList() {
     }
   }
 
-  const getEscrowColor = (status) => {
-    switch (status) {
-      case 'HELD':
-        return 'bg-blue-100 text-blue-800'
-      case 'RELEASED':
-        return 'bg-green-100 text-green-800'
-      case 'DISPUTED':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
   if (orders.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -80,15 +67,6 @@ export function OrderList() {
                   >
                     {order.status}
                   </span>
-                  {order.escrowStatus && (
-                    <span
-                      className={`px-3 py-1 text-xs font-semibold rounded-full ${getEscrowColor(
-                        order.escrowStatus
-                      )}`}
-                    >
-                      Escrow: {order.escrowStatus}
-                    </span>
-                  )}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 mb-4">

@@ -3,9 +3,8 @@ const mongoose = require('mongoose');
 // Valid status transitions
 const STATUS_TRANSITIONS = {
   'NOT_HARVESTED': ['AVAILABLE', 'PRE_ORDER'],
-  'AVAILABLE': ['NOT_HARVESTED', 'ON_HOLD_OFFLINE', 'PRE_ORDER'],
-  'PRE_ORDER': ['AVAILABLE', 'NOT_HARVESTED'],
-  'ON_HOLD_OFFLINE': ['AVAILABLE']
+  'AVAILABLE': ['NOT_HARVESTED', 'PRE_ORDER'],
+  'PRE_ORDER': ['AVAILABLE', 'NOT_HARVESTED']
 };
 
 const ProductSchema = new mongoose.Schema({
@@ -41,14 +40,10 @@ const ProductSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: {
-      values: ['NOT_HARVESTED', 'AVAILABLE', 'PRE_ORDER', 'ON_HOLD_OFFLINE'],
+      values: ['NOT_HARVESTED', 'AVAILABLE', 'PRE_ORDER'],
       message: 'Invalid product status'
     },
     default: 'NOT_HARVESTED'
-  },
-  isOfflineCreated: {
-    type: Boolean,
-    default: false
   },
   // Soft delete fields
   isDeleted: {
@@ -64,6 +59,16 @@ const ProductSchema = new mongoose.Schema({
   images: {
     type: [String],
     default: []
+  },
+  pickupLocation: {
+    address: {
+      type: String,
+      trim: true
+    },
+    coordinates: {
+      lat: { type: Number, min: -90, max: 90 },
+      lng: { type: Number, min: -180, max: 180 }
+    }
   },
   // Optional: product category
   category: {

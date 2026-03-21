@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 const connectDB = require('./config/db');
 
 // Load environment variables
@@ -44,6 +45,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Auth middleware
 const { authenticateUser, authorizeRoles } = require('./middleware/auth');
@@ -60,7 +62,6 @@ app.use('/api/logistics', require('./routes/logistics'));
 app.use('/api/logistics/tracking', require('./routes/tracking'));  // Real-time Tracking
 app.use('/api/logistics/routes', require('./routes/routePlan'));   // Route Planning
 app.use('/api/logistics/kpi', require('./routes/kpi'));            // Logistics KPIs
-app.use('/api/payments', require('./routes/payments'));  // Mock UPI Payments
 app.use('/api/notifications', require('./routes/notifications'));  // Notifications
 app.use('/api/feedback', require('./routes/feedback'));  // Feedback & Ratings
 app.use('/api/farmer', require('./routes/demandForecast'));  // Demand Forecasting
@@ -129,20 +130,37 @@ app.use(errorLogger);
 // Global error handler
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+const DEFAULT_PORT = Number(process.env.PORT) || 5000;
+const MAX_PORT_TRIES = 10;
 
 // Import price data scheduler
 const priceDataScheduler = require('./utils/priceDataScheduler');
 
-const server = app.listen(PORT, () => {
-  console.log(`\n🚀 Server running on port ${PORT}`);
-  console.log(`📡 API available at http://localhost:${PORT}/api`);
-  console.log(`📊 Stats available at http://localhost:${PORT}/system/stats`);
-  console.log(`💚 Health check at http://localhost:${PORT}/system/health\n`);
-  
-  // Start price data scheduler
-  priceDataScheduler.start();
-});
+let server;
+const startServer = (port, triesLeft) => {
+  server = app.listen(port, () => {
+    console.log(`\n🚀 Server running on port ${port}`);
+    console.log(`📡 API available at http://localhost:${port}/api`);
+    console.log(`📊 Stats available at http://localhost:${port}/system/stats`);
+    console.log(`💚 Health check at http://localhost:${port}/system/health\n`);
+    
+    // Start price data scheduler
+    priceDataScheduler.start();
+  });
+
+  server.on('error', (err) => {
+    if (err && err.code === 'EADDRINUSE' && triesLeft > 0) {
+      console.warn(`Port ${port} is already in use. Trying ${port + 1}...`);
+      startServer(port + 1, triesLeft - 1);
+      return;
+    }
+
+    console.error(`Failed to start server on port ${port}:`, err);
+    process.exit(1);
+  });
+};
+
+startServer(DEFAULT_PORT, MAX_PORT_TRIES);
 
 // Graceful shutdown handler
 process.on('SIGTERM', () => {

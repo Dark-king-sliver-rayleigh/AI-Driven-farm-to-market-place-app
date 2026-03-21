@@ -24,13 +24,7 @@ export function LogisticsDashboardIntegrated() {
     try {
       setActionLoading(orderId);
       setActionError(null);
-
-      // For demo, use placeholder location data
-      await logisticsAPI.acceptOrder(orderId, {
-        pickupLocation: { address: 'Farm Location - To be confirmed' },
-        dropLocation: { address: 'Consumer Location - To be confirmed' },
-        distance: 10
-      });
+      await logisticsAPI.acceptOrder(orderId);
 
       setActionSuccess('Order accepted successfully!');
       refetchOrders();
@@ -187,6 +181,12 @@ export function LogisticsDashboardIntegrated() {
                         </div>
                         <div className="text-sm text-gray-500">
                           Consumer: {order.consumerId?.name || 'Unknown'}
+                        </div>
+                        <div className="text-sm text-gray-500 mt-2">
+                          Pickup: {order.pickupLocation?.address || 'Pickup location missing'}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Drop: {order.deliveryAddress?.address || 'Delivery address missing'}
                         </div>
                       </div>
                       <div className="text-right">

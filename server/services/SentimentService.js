@@ -52,8 +52,8 @@ class SentimentService {
     if (apiKey && apiKey !== 'your_gemini_api_key_here') {
       try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        this.geminiModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-        console.log('[SentimentService] Gemini AI initialized successfully');
+        this.geminiModel = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+        console.log('[SentimentService] Gemini AI initialized (gemini-2.5-flash-lite, free tier)');
       } catch (err) {
         console.warn('[SentimentService] Failed to initialize Gemini:', err.message);
       }

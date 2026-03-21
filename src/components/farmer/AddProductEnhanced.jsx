@@ -2,6 +2,36 @@ import { useState, useMemo } from 'react';
 import { productAPI } from '../../services/api';
 import { CategorySelector, CATEGORY_COMMODITIES } from './CategorySelector';
 import { ImageUploader } from './ImageUploader';
+import { convertUnit, formatCurrency, WEIGHT_UNITS } from '../../utils/units';
+import { LocationPicker } from '../integrated/LocationPicker';
+
+// Shows equivalent price in all other weight units
+function PriceConversionHint({ price, unit }) {
+  if (!price || parseFloat(price) <= 0 || !WEIGHT_UNITS.includes(unit)) return null;
+  const p = parseFloat(price);
+  const others = WEIGHT_UNITS.filter((u) => u !== unit);
+  const rows = [];
+  for (const u of others) {
+    try {
+      const factor = convertUnit(1, unit, u);
+      rows.push({ unit: u, price: p / factor });
+    } catch { /* skip */ }
+  }
+  if (rows.length === 0) return null;
+  return (
+    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+      <p className="text-xs font-semibold text-amber-700 mb-2">💱 Equivalent price in other units</p>
+      <div className="grid grid-cols-3 gap-2">
+        {rows.map(({ unit: u, price: converted }) => (
+          <div key={u} className="text-center bg-white border border-amber-100 rounded-lg px-2 py-1">
+            <div className="text-sm font-bold text-gray-800">{formatCurrency(converted, 'INR')}</div>
+            <div className="text-xs text-gray-500">/ {u}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /**
  * Enhanced Add Product Component
@@ -23,7 +53,10 @@ export function AddProductEnhanced({ onSuccess, onCancel }) {
     unit: 'kg',
     price: '',
     status: 'AVAILABLE',
-    images: []
+    images: [],
+    pickupAddress: '',
+    pickupLat: '',
+    pickupLng: '',
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -77,6 +110,7 @@ export function AddProductEnhanced({ onSuccess, onCancel }) {
     if (!formData.price || parseFloat(formData.price) <= 0) {
       newErrors.price = 'Valid price is required';
     }
+    if (!formData.pickupAddress.trim()) newErrors.pickupAddress = 'Pickup address is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -97,7 +131,12 @@ export function AddProductEnhanced({ onSuccess, onCancel }) {
         price: parseFloat(formData.price),
         status: formData.status,
         images: formData.images,
-        category: category
+        category: category,
+        pickupLocation: {
+          address: formData.pickupAddress.trim(),
+          lat: Number(formData.pickupLat) || 0,
+          lng: Number(formData.pickupLng) || 0,
+        }
       };
 
       await productAPI.create(productData);
@@ -269,6 +308,7 @@ export function AddProductEnhanced({ onSuccess, onCancel }) {
             <p className="text-xs text-gray-500 mt-1">
               💡 You set your own price. We do not auto-fill prices.
             </p>
+            <PriceConversionHint price={formData.price} unit={formData.unit} />
           </div>
 
           {/* Image Upload */}
@@ -277,6 +317,39 @@ export function AddProductEnhanced({ onSuccess, onCancel }) {
             onChange={handleImagesChange}
             maxImages={3}
           />
+
+          {/* Pickup Location */}
+          <div className="space-y-4">
+            <label className="block text-sm font-semibold text-gray-800">
+              📍 Pickup Location
+            </label>
+            <p className="text-xs text-gray-500 -mt-2">
+              Where should the buyer or delivery partner pick up this product?
+            </p>
+
+            <LocationPicker
+              value={{
+                address: formData.pickupAddress,
+                lat: formData.pickupLat,
+                lng: formData.pickupLng,
+              }}
+              onChange={(loc) => {
+                setFormData(prev => ({
+                  ...prev,
+                  pickupAddress: loc.address || '',
+                  pickupLat: loc.lat || '',
+                  pickupLng: loc.lng || '',
+                }));
+                if (errors.pickupAddress) {
+                  setErrors(prev => ({ ...prev, pickupAddress: null }));
+                }
+              }}
+              label=""
+              placeholder="e.g., Near Panchayat Office, Farm Road, Village Name"
+              showMap={true}
+            />
+            {errors.pickupAddress && <p className="text-red-500 text-sm mt-1">{errors.pickupAddress}</p>}
+          </div>
 
           {/* Status */}
           <div>

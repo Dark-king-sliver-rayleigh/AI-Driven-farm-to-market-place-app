@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store/index'
 import { updateProduct, deleteProduct } from '../store/actions'
-import { formatCurrency } from '../utils/units'
+import { formatCurrency, convertUnit, WEIGHT_UNITS } from '../utils/units'
 
 /**
  * Inventory table component for managing products
@@ -17,6 +17,25 @@ export function InventoryTable() {
 
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({})
+  const [displayUnit, setDisplayUnit] = useState('')  // '' means per-product unit
+
+  // Helper: convert a product's price+quantity into the chosen display unit
+  const toDisplay = (product) => {
+    const target = displayUnit || product.unit
+    if (target === product.unit) {
+      return { price: product.pricePerUnit, quantity: product.quantity, unit: product.unit }
+    }
+    try {
+      const factor = convertUnit(1, product.unit, target)
+      return {
+        price: product.pricePerUnit / factor,
+        quantity: parseFloat(convertUnit(product.quantity, product.unit, target).toFixed(2)),
+        unit: target,
+      }
+    } catch {
+      return { price: product.pricePerUnit, quantity: product.quantity, unit: product.unit }
+    }
+  }
 
   const handleEdit = (product) => {
     setEditingId(product.id)
@@ -72,10 +91,31 @@ export function InventoryTable() {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <div className="p-6 border-b">
-        <h2 className="text-2xl font-bold text-gray-800">Manage Inventory</h2>
-        <p className="text-sm text-gray-600 mt-1">
-          View, edit, and manage all your listed products
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">Manage Inventory</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              View, edit, and manage all your listed products
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Display Unit:
+            </label>
+            <select
+              value={displayUnit}
+              onChange={(e) => setDisplayUnit(e.target.value)}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-green-500 outline-none"
+            >
+              <option value="">Per Product Unit</option>
+              {WEIGHT_UNITS.map((u) => (
+                <option key={u} value={u}>
+                  {u === 'kg' ? '⚖️ kg' : u === 'quintal' ? '📦 quintal' : u === 'ton' ? '🏗️ ton' : '🔢 lb'}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -100,7 +140,9 @@ export function InventoryTable() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {farmerProducts.map((product) => (
+            {farmerProducts.map((product) => {
+              const disp = toDisplay(product)
+              return (
               <tr key={product.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   {editingId === product.id ? (
@@ -127,9 +169,16 @@ export function InventoryTable() {
                       className="w-24 px-2 py-1 border border-gray-300 rounded"
                     />
                   ) : (
-                    <span className="text-sm text-gray-900">
-                      {product.quantity} {product.unit}
-                    </span>
+                    <div>
+                      <span className="text-sm text-gray-900">
+                        {disp.quantity} {disp.unit}
+                      </span>
+                      {disp.unit !== product.unit && (
+                        <div className="text-xs text-gray-400">
+                          ({product.quantity} {product.unit})
+                        </div>
+                      )}
+                    </div>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -142,9 +191,16 @@ export function InventoryTable() {
                       className="w-24 px-2 py-1 border border-gray-300 rounded"
                     />
                   ) : (
-                    <span className="text-sm text-gray-900">
-                      {formatCurrency(product.pricePerUnit, product.currency)}/{product.unit}
-                    </span>
+                    <div>
+                      <span className="text-sm text-gray-900">
+                        {formatCurrency(disp.price, product.currency)}/{disp.unit}
+                      </span>
+                      {disp.unit !== product.unit && (
+                        <div className="text-xs text-gray-400">
+                          ({formatCurrency(product.pricePerUnit, product.currency)}/{product.unit})
+                        </div>
+                      )}
+                    </div>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -157,7 +213,6 @@ export function InventoryTable() {
                       <option value="NOT_HARVESTED">Not Harvested Yet</option>
                       <option value="AVAILABLE">Available</option>
                       <option value="PRE_ORDER">Pre-Order</option>
-                      <option value="ON_HOLD_OFFLINE">On Hold (Offline)</option>
                       <option value="OUT_OF_STOCK">Out of Stock</option>
                     </select>
                   ) : (
@@ -170,8 +225,6 @@ export function InventoryTable() {
                             ? 'bg-yellow-100 text-yellow-800'
                             : product.status === 'PRE_ORDER'
                             ? 'bg-blue-100 text-blue-800'
-                            : product.status === 'ON_HOLD_OFFLINE'
-                            ? 'bg-orange-100 text-orange-800'
                             : product.status === 'OUT_OF_STOCK'
                             ? 'bg-gray-100 text-gray-800'
                             : 'bg-red-100 text-red-800'
@@ -179,13 +232,11 @@ export function InventoryTable() {
                       >
                         {product.status === 'NOT_HARVESTED'
                           ? 'Not Harvested Yet'
-                          : product.status === 'ON_HOLD_OFFLINE'
-                          ? 'On Hold (Offline)'
                           : product.status}
                       </span>
                       {product.source && (
                         <span className="ml-2 text-xs" title={`Source: ${product.source}`}>
-                          {product.source === 'SMS' ? '📱' : product.source === 'VOICE' ? '📞' : '💻'}
+                          {product.source === 'MOBILE' ? '📲' : '💻'}
                         </span>
                       )}
                       {product.priceSuggestion && (
@@ -246,7 +297,7 @@ export function InventoryTable() {
                   )}
                 </td>
               </tr>
-            ))}
+            )})}  
           </tbody>
         </table>
       </div>

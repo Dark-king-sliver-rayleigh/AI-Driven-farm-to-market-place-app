@@ -230,7 +230,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"ON_HOLD_OFFLINE\"\n}"
+              "raw": "{\n  \"status\": \"PRE_ORDER\"\n}"
             },
             "url": "{{baseUrl}}/api/farmer/products/{{productId}}/status"
           }

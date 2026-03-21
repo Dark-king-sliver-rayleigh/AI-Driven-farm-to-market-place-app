@@ -24,8 +24,6 @@ const NotificationSchema = new mongoose.Schema({
       'DELIVERY_DELAYED',
       'DELIVERY_ASSIGNED',
       'DELIVERY_STATUS_UPDATE',
-      'PAYMENT_SUCCESS',
-      'PAYMENT_FAILURE',
       'PRODUCT_LOW_STOCK'
     ],
     required: [true, 'Notification type is required']
@@ -41,7 +39,7 @@ const NotificationSchema = new mongoose.Schema({
   },
   relatedEntityType: {
     type: String,
-    enum: ['Order', 'Product', 'Delivery', 'Payment']
+    enum: ['Order', 'Product', 'Delivery']
   },
   isRead: {
     type: Boolean,

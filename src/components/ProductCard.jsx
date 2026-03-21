@@ -1,20 +1,41 @@
-import { formatCurrency } from '../utils/units'
+import { formatCurrency, convertUnit } from '../utils/units'
 import { getAvailabilityConfidence } from '../store/index'
 
-export function ProductCard({ product, onAddToCart, onView, onContactFarmer }) {
-  if (!product || product.status === 'NOT_HARVESTED' || product.status === 'ON_HOLD_OFFLINE') return null
+export function ProductCard({ product, displayUnit, onAddToCart, onView, onContactFarmer }) {
+  if (!product || product.status === 'NOT_HARVESTED') return null
 
   const thumbnail = product.images && product.images[0]
   const availabilityConfidence = getAvailabilityConfidence(product)
   const isLowConfidence = availabilityConfidence === 'LOW'
   const source = product.source || 'WEB'
 
+  // Unit conversion: convert price and quantity to the chosen display unit
+  const effectiveUnit = displayUnit || product.unit
+  let displayPrice = product.pricePerUnit
+  let displayQuantity = product.quantity
+  let displayUnitLabel = product.unit
+
+  if (effectiveUnit && effectiveUnit !== product.unit) {
+    try {
+      // Price conversion: if product is ₹2000/quintal, then per kg = 2000 / 100 = ₹20
+      // convertUnit(1, product.unit, effectiveUnit) gives how many effectiveUnits are in 1 product.unit
+      // So price per effectiveUnit = pricePerProductUnit / conversionFactor
+      const conversionFactor = convertUnit(1, product.unit, effectiveUnit)
+      displayPrice = product.pricePerUnit / conversionFactor
+      displayQuantity = convertUnit(product.quantity, product.unit, effectiveUnit)
+      displayUnitLabel = effectiveUnit
+    } catch {
+      // Fallback to original if conversion fails
+      displayPrice = product.pricePerUnit
+      displayQuantity = product.quantity
+      displayUnitLabel = product.unit
+    }
+  } else {
+    displayUnitLabel = product.unit
+  }
+
   const getSourceIcon = (src) => {
     switch (src) {
-      case 'SMS':
-        return '📱'
-      case 'VOICE':
-        return '📞'
       case 'MOBILE':
         return '📲'
       default:
@@ -80,11 +101,11 @@ export function ProductCard({ product, onAddToCart, onView, onContactFarmer }) {
           <div className="flex items-center justify-between mb-4">
             <div>
               <div className="text-xl font-bold text-gray-900">
-                {formatCurrency(product.pricePerUnit, product.currency)}
-                <span className="text-sm text-gray-400 font-normal ml-1">/ {product.unit}</span>
+                {formatCurrency(displayPrice, product.currency)}
+                <span className="text-sm text-gray-400 font-normal ml-1">/ {displayUnitLabel}</span>
               </div>
               <div className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full inline-block mt-1">
-                {product.quantity} {product.unit} left
+                {Number.isInteger(displayQuantity) ? displayQuantity : displayQuantity.toFixed(2)} {displayUnitLabel} left
               </div>
             </div>
           </div>

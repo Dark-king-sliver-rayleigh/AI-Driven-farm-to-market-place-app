@@ -52,7 +52,7 @@ export function Transactions() {
   const pendingDisbursements = state.orders
     .filter(o => {
       const product = state.products.find(p => p.id === o.productId)
-      return product?.farmerId === currentUser?.id && o.status === 'DELIVERED' && o.escrowStatus === 'HELD'
+      return product?.farmerId === currentUser?.id && o.status === 'DELIVERED'
     })
     .map(order => ({
       orderId: order.id,

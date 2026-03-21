@@ -174,7 +174,7 @@ export default function AIChatWidget() {
     setLoading(true);
     
     try {
-      const token = sessionStorage.getItem('token');
+      const token = sessionStorage.getItem('authToken');
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       
       const res = await fetch(`${apiUrl}/chatbot/message`, {

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../store/index'
 import { DeliveryCard } from '../components/DeliveryCard'
-import { OfflineBanner } from '../components/OfflineBanner'
 import { sortByPriority } from '../utils/logisticsHelpers'
 
 /**
@@ -65,8 +64,6 @@ export function LogisticsDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-100 pb-20">
-      <OfflineBanner />
-      
       {/* Header */}
       <div className="bg-purple-600 text-white px-4 py-6">
         <h1 className="text-xl font-bold">Today's Deliveries</h1>

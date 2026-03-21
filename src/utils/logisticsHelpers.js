@@ -40,18 +40,12 @@ export function formatDistance(km) {
 
 /**
  * Get navigation URL for driving directions.
- * Uses a generic geo: URI that works on mobile, and falls back
- * to OpenStreetMap directions on desktop browsers.
+ * Opens OpenStreetMap directions.
  * @param {number} lat - Destination latitude
  * @param {number} lng - Destination longitude
  * @returns {string} Navigation deep link URL
  */
 export function getNavigationUrl(lat, lng) {
-  // On mobile devices the geo: URI opens the default map app
-  if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
-    return `geo:${lat},${lng}?q=${lat},${lng}`;
-  }
-  // Desktop fallback – OpenStreetMap directions
   return `https://www.openstreetmap.org/directions?route=;;${lat},${lng}`;
 }
 

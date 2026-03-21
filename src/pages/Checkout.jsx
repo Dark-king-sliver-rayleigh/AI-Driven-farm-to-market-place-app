@@ -7,7 +7,6 @@ import { ConsumerAddressManager } from '../components/integrated/ConsumerAddress
 export function Checkout() {
   const { state, dispatch } = useStore()
   const navigate = useNavigate()
-  const [escrowConfirmed, setEscrowConfirmed] = useState(false)
   const [deliveryWindow, setDeliveryWindow] = useState('')
   const [deliveryConstraints, setDeliveryConstraints] = useState('')
   const [selectedAddress, setSelectedAddress] = useState(null)
@@ -17,11 +16,6 @@ export function Checkout() {
   const currency = cartItems[0]?.currency || 'INR'
 
   const handlePlaceOrder = () => {
-    if (!escrowConfirmed) {
-      alert('Please confirm the escrow terms to proceed')
-      return
-    }
-
     if (!selectedAddress) {
       alert('Please select a delivery address')
       return
@@ -39,7 +33,6 @@ export function Checkout() {
         totalPrice: item.totalPrice,
         currency: item.currency,
         status: 'PENDING',
-        escrowStatus: 'HELD', // Set escrow status to HELD on checkout
         negotiation: [],
         assignedLogisticsId: null,
         deliveryAudit: [],
@@ -54,8 +47,7 @@ export function Checkout() {
     // Clear cart
     actions.clearCart(dispatch)
 
-    // TODO: Integrate payment gateway supporting UPI and payment holds / escrow (production compliance required)
-    alert('Order placed successfully! Funds are held in escrow until delivery is verified.')
+    alert('Order placed successfully!')
     navigate('/orders')
   }
 
@@ -130,26 +122,6 @@ export function Checkout() {
         </div>
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-        <h3 className="font-semibold mb-2">Escrow Protection</h3>
-        <p className="text-sm text-gray-700 mb-3">
-          Your payment will be held in escrow until the delivery is verified. This protects both
-          you and the farmer. Funds will be released to the farmer only after you confirm delivery.
-        </p>
-        <label className="flex items-start gap-2">
-          <input
-            type="checkbox"
-            checked={escrowConfirmed}
-            onChange={(e) => setEscrowConfirmed(e.target.checked)}
-            className="mt-1"
-            required
-          />
-          <span className="text-sm">
-            I acknowledge funds will be held in escrow until verified delivery *
-          </span>
-        </label>
-      </div>
-
       <div className="flex gap-4">
         <button
           onClick={() => navigate('/cart')}
@@ -159,8 +131,7 @@ export function Checkout() {
         </button>
         <button
           onClick={handlePlaceOrder}
-          disabled={!escrowConfirmed}
-          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
         >
           Place Order
         </button>

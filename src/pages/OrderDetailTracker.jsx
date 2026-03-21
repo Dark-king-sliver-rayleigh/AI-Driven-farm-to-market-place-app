@@ -42,13 +42,6 @@ export function OrderDetailTracker() {
   const productLocation = product?.location
   const logisticsLocation = logistics?.currentGeo
 
-  // Mock SMS timeline if logistics position unavailable
-  const smsTimeline = logisticsLocation
-    ? []
-    : [
-        { timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), message: 'Order picked up' },
-        { timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), message: 'En route to delivery location' },
-      ]
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -80,12 +73,6 @@ export function OrderDetailTracker() {
             <div className="text-sm text-gray-600">Total Price</div>
             <div className="font-medium">{formatCurrency(order.totalPrice, order.currency)}</div>
           </div>
-          {order.escrowStatus && (
-            <div>
-              <div className="text-sm text-gray-600">Escrow Status</div>
-              <div className="font-medium">{order.escrowStatus}</div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -117,21 +104,6 @@ export function OrderDetailTracker() {
         {!logisticsLocation && logistics && (
           <div className="text-sm text-gray-600 mb-2">
             Last synced: {logistics.lastSyncedAt ? new Date(logistics.lastSyncedAt).toLocaleString() : 'N/A'}
-          </div>
-        )}
-        {smsTimeline.length > 0 && (
-          <div className="mt-4">
-            <h3 className="text-sm font-medium mb-2">SMS Timeline</h3>
-            <div className="space-y-2">
-              {smsTimeline.map((sms, index) => (
-                <div key={index} className="text-sm text-gray-600 border-l-2 border-blue-500 pl-2">
-                  <div className="font-medium">{sms.message}</div>
-                  <div className="text-xs text-gray-500">
-                    {new Date(sms.timestamp).toLocaleString()}
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         )}
       </div>

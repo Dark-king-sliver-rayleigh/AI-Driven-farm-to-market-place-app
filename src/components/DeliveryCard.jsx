@@ -110,11 +110,6 @@ export function DeliveryCard({ order, product, farmer, consumer, driverLocation 
           <span className="text-gray-400 mx-1">•</span>
           <span>{order.quantity} {order.unit}</span>
         </div>
-        <span className={`px-2 py-1 text-xs font-semibold rounded ${
-          order.paymentMethod === 'COD' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
-        }`}>
-          {order.paymentMethod === 'COD' ? '💵 COD' : '💳 Online'}
-        </span>
       </div>
     </Link>
   )

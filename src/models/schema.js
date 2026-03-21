@@ -1,6 +1,6 @@
 /**
  * Data model schemas for AgroDirect
- * Updated to include offline/SMS/Voice, escrow, price intelligence, delivery audit
+ * Includes price intelligence, delivery audit
  */
 
 /**
@@ -14,8 +14,8 @@
  * @property {'INR'|'USD'} currency
  * @property {string[]} images - Array of data URLs
  * @property {{address: string, lat: number, lng: number}} location
- * @property {'NOT_HARVESTED'|'AVAILABLE'|'PRE_ORDER'|'ON_HOLD_OFFLINE'|'OUT_OF_STOCK'|'DELETED'} status
- * @property {'WEB'|'MOBILE'|'SMS'|'VOICE'} source
+ * @property {'NOT_HARVESTED'|'AVAILABLE'|'PRE_ORDER'|'OUT_OF_STOCK'|'DELETED'} status
+ * @property {'WEB'|'MOBILE'} source
  * @property {string} lastSyncedAt - ISO date string
  * @property {'HIGH'|'MEDIUM'|'LOW'} availabilityConfidence
  * @property {{value: number, currency: 'INR'|'USD', confidence: number, rationaleId: string}} priceSuggestion
@@ -33,7 +33,6 @@
  * @property {number} totalPrice
  * @property {'INR'|'USD'} currency
  * @property {'PENDING'|'ACCEPTED'|'REJECTED'|'PICKED_UP'|'OUT_FOR_DELIVERY'|'DELIVERED'} status
- * @property {'HELD'|'RELEASED'|'DISPUTED'} escrowStatus
  * @property {Array<{from: 'consumer'|'farmer', message: string, priceOffer?: number, createdAt: string}>} negotiation
  * @property {string|null} assignedLogisticsId
  * @property {Array<{timestamp: string, eventType: string, geo: {lat: number, lng: number}, agentId: string, photoUrl?: string, signature?: string}>} deliveryAudit
@@ -50,8 +49,7 @@
  * @property {string|null} profileImage - data URL
  * @property {boolean} verified
  * @property {{avg: number, count: number}} ratings
- * @property {'WEB'|'SMS'|'VOICE'} onboardingMethod
- * @property {number} pendingSyncCount
+ * @property {'WEB'} onboardingMethod
  */
 
 /**

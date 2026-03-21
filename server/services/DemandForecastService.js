@@ -296,9 +296,11 @@ class DemandForecastService {
    * Falls back to generating one on-demand if none exists or is expired.
    */
   static async getLatestForecast(commodity, location = 'ALL', horizonDays = 90) {
+    const escapedCommodity = this._escapeRegex(commodity);
+    const escapedLocation = this._escapeRegex(location);
     const existing = await DemandForecast.findOne({
-      commodity: { $regex: new RegExp(`^${commodity}$`, 'i') },
-      location: { $regex: new RegExp(`^${location}$`, 'i') },
+      commodity: { $regex: new RegExp(`^${escapedCommodity}$`, 'i') },
+      location: { $regex: new RegExp(`^${escapedLocation}$`, 'i') },
       expiresAt: { $gt: new Date() }
     }).sort({ generatedAt: -1 });
 
@@ -348,11 +350,16 @@ class DemandForecastService {
   /**
    * Gather daily demand data from historical delivered orders.
    */
+  static _escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
   static async _getHistoricalDemand(commodity, location) {
     const since = new Date(Date.now() - LOOKBACK_DAYS * 86400000);
 
+    const escaped = this._escapeRegex(commodity);
     const products = await Product.find({
-      name: { $regex: new RegExp(commodity, 'i') },
+      name: { $regex: new RegExp(escaped, 'i') },
       isDeleted: false
     }).select('_id');
 

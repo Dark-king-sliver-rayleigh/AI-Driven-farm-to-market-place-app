@@ -15,7 +15,7 @@ const mongoose = require('mongoose');
  */
 const createOrder = async (req, res) => {
   try {
-    const { items, paymentMode, deliveryAddress } = req.body;
+    const { items, paymentMode, deliveryAddress, deliveryLocation } = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
@@ -37,6 +37,7 @@ const createOrder = async (req, res) => {
     const orderItems = [];
     let hasPreOrderItems = false; // Track if any item is a pre-order
     const productsToUpdate = []; // Track products that need quantity updates
+    let fallbackPickupLocation = null;
 
     // Allowed statuses for ordering
     // AVAILABLE: Regular order, immediate delivery
@@ -99,6 +100,14 @@ const createOrder = async (req, res) => {
         price: product.price
       });
 
+      if (!fallbackPickupLocation && product.pickupLocation?.address) {
+        fallbackPickupLocation = {
+          label: 'Product Pickup',
+          address: product.pickupLocation.address,
+          coordinates: product.pickupLocation.coordinates
+        };
+      }
+
       // Track products that need quantity updates (only AVAILABLE products)
       if (product.status === 'AVAILABLE') {
         productsToUpdate.push({
@@ -137,7 +146,7 @@ const createOrder = async (req, res) => {
                           farmerUser?.pickupLocations?.[0] || null;
     
     // Get consumer's delivery address (from request or saved default)
-    let orderDeliveryAddress = deliveryAddress || null;
+    let orderDeliveryAddress = deliveryAddress || deliveryLocation || null;
     if (!orderDeliveryAddress) {
       const consumerUser = await User.findById(req.user._id).select('deliveryAddresses location');
       const defaultAddr = consumerUser?.deliveryAddresses?.find(a => a.isDefault) ||
@@ -163,7 +172,7 @@ const createOrder = async (req, res) => {
         label: defaultPickup.label,
         address: defaultPickup.address,
         coordinates: defaultPickup.coordinates
-      } : null
+      } : fallbackPickupLocation
     });
 
     // Notify farmer of new order

@@ -1,5 +1,6 @@
 const Product = require('../models/Product');
 const Order = require('../models/Order');
+const { persistImageList } = require('../utils/imageStorage');
 
 /**
  * @desc    Create a new product
@@ -8,7 +9,8 @@ const Order = require('../models/Order');
  */
 const createProduct = async (req, res) => {
   try {
-    const { name, quantity, unit, price, status, isOfflineCreated, images, category } = req.body;
+    const { name, quantity, unit, price, status, images, category, pickupLocation } = req.body;
+    const storedImages = await persistImageList(images || [], { entity: 'products', req });
 
     const product = await Product.create({
       farmerId: req.user._id,
@@ -17,9 +19,15 @@ const createProduct = async (req, res) => {
       unit,
       price,
       status: status || 'AVAILABLE',
-      isOfflineCreated: isOfflineCreated || false,
-      images: images || [],
-      category: category || null
+      images: storedImages,
+      category: category || null,
+      pickupLocation: pickupLocation?.address ? {
+        address: pickupLocation.address,
+        coordinates: {
+          lat: pickupLocation.lat,
+          lng: pickupLocation.lng
+        }
+      } : undefined
     });
 
     res.status(201).json({
@@ -28,6 +36,13 @@ const createProduct = async (req, res) => {
       product
     });
   } catch (error) {
+    if (error.message && error.message.toLowerCase().includes('image')) {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({

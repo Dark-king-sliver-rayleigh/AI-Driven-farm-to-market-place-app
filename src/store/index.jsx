@@ -11,7 +11,7 @@ import { fetchPriceSuggestion } from '../services/priceEngine'
 //   logistics: Logistics[]
 //   users: User[]
 //   cart: CartItem[]
-//   ui: { currentUser: User | null, role: 'consumer' | 'farmer' | 'logistics' | 'admin', notifications: [], offlineQueue: [] }
+//   ui: { currentUser: User | null, role: 'consumer' | 'farmer' | 'logistics', notifications: [] }
 // }
 
 const initialState = {
@@ -25,7 +25,6 @@ const initialState = {
     currentUser: null,
     role: 'farmer',
     notifications: [],
-    offlineQueue: [],
   },
 }
 // ----- Reducers -----
@@ -118,18 +117,6 @@ function farmersReducer(state, action) {
       return state.map((f) => (f.id === action.payload.id ? { ...f, ...action.payload } : f))
     case 'FARMER_ADD':
       return [...state, action.payload]
-    case 'FARMER_INCREMENT_SYNC_COUNT':
-      return state.map((f) =>
-        f.id === action.payload
-          ? { ...f, pendingSyncCount: (f.pendingSyncCount || 0) + 1 }
-          : f
-      )
-    case 'FARMER_DECREMENT_SYNC_COUNT':
-      return state.map((f) =>
-        f.id === action.payload
-          ? { ...f, pendingSyncCount: Math.max(0, (f.pendingSyncCount || 0) - 1) }
-          : f
-      )
     default:
       return state
   }
@@ -171,18 +158,6 @@ function uiReducer(state, action) {
       return { ...state, currentUser: action.payload }
     case 'UI_ADD_NOTIFICATION':
       return { ...state, notifications: [...(state.notifications || []), action.payload] }
-    case 'UI_ENQUEUE_OFFLINE_ACTION':
-      return {
-        ...state,
-        offlineQueue: [...(state.offlineQueue || []), { ...action.payload, timestamp: new Date().toISOString() }],
-      }
-    case 'UI_CLEAR_OFFLINE_QUEUE':
-      return { ...state, offlineQueue: [] }
-    case 'UI_REMOVE_OFFLINE_ACTION':
-      return {
-        ...state,
-        offlineQueue: (state.offlineQueue || []).filter((a) => a.id !== action.payload),
-      }
     default:
       return state
   }
@@ -196,7 +171,7 @@ function rootReducer(state, action) {
     logistics: logisticsReducer(state.logistics || [], action),
     users: usersReducer(state.users || [], action),
     cart: cartReducer(state.cart || [], action),
-    ui: uiReducer(state.ui || { currentUser: null, role: 'farmer', notifications: [], offlineQueue: [] }, action),
+    ui: uiReducer(state.ui || { currentUser: null, role: 'farmer', notifications: [] }, action),
   }
 }
 
@@ -223,11 +198,6 @@ export function StoreProvider({ children }) {
         if (stored.ui.notifications) {
           stored.ui.notifications.forEach((notif) =>
             dispatch({ type: 'UI_ADD_NOTIFICATION', payload: notif })
-          )
-        }
-        if (stored.ui.offlineQueue) {
-          stored.ui.offlineQueue.forEach((action) =>
-            dispatch({ type: 'UI_ENQUEUE_OFFLINE_ACTION', payload: action })
           )
         }
       }
@@ -277,8 +247,6 @@ export const actions = {
     dispatch({ type: 'ORDER_ADD_DELIVERY_AUDIT', payload: { orderId, auditEntry } }),
   setRole: (dispatch, role) => dispatch({ type: 'UI_SET_ROLE', payload: role }),
   setCurrentUser: (dispatch, user) => dispatch({ type: 'UI_SET_CURRENT_USER', payload: user }),
-  enqueueOfflineAction: (dispatch, action) =>
-    dispatch({ type: 'UI_ENQUEUE_OFFLINE_ACTION', payload: action }),
   addNotification: (dispatch, notification) =>
     dispatch({ type: 'UI_ADD_NOTIFICATION', payload: notification }),
 }
@@ -299,75 +267,10 @@ export function getAvailabilityConfidence(product) {
   if (product.source === 'WEB') return 'HIGH'
   if (product.source === 'MOBILE') return 'MEDIUM'
   
-  // For SMS/VOICE, check lastSyncedAt
-  if (product.source === 'SMS' || product.source === 'VOICE') {
-    if (!product.lastSyncedAt) return 'LOW'
-    const syncedAt = new Date(product.lastSyncedAt)
-    const hoursSinceSync = (Date.now() - syncedAt.getTime()) / (1000 * 60 * 60)
-    if (hoursSinceSync > 12) return 'LOW'
-    if (hoursSinceSync > 6) return 'MEDIUM'
-    return 'HIGH'
-  }
-  
   return 'MEDIUM'
 }
 
-/**
- * Get pending sync count for a farmer
- */
-export function getPendingSyncCount(state, farmerId) {
-  const farmer = state.farmers.find((f) => f.id === farmerId)
-  return farmer?.pendingSyncCount || 0
-}
 
-/**
- * Enqueue an offline action
- */
-export function enqueueOfflineAction(dispatch, action) {
-  const actionWithId = { ...action, id: `offline-${Date.now()}-${Math.random()}` }
-  dispatch({ type: 'UI_ENQUEUE_OFFLINE_ACTION', payload: actionWithId })
-  return actionWithId.id
-}
-
-/**
- * Process sync queue (simulated)
- * TODO: Replace with real server-side reconciliation endpoints and conflict resolution
- */
-export function processSyncQueue(dispatch, state) {
-  const queue = state.ui.offlineQueue || []
-  if (queue.length === 0) return
-  
-  // Simulate processing each action
-  queue.forEach((action) => {
-    // Simulate API call delay
-    setTimeout(() => {
-      // Process based on action type
-      if (action.type === 'PRODUCT_ADD' || action.type === 'PRODUCT_UPDATE') {
-        const product = action.payload
-        // Update lastSyncedAt
-        dispatch({
-          type: 'PRODUCT_UPDATE',
-          payload: {
-            ...product,
-            lastSyncedAt: new Date().toISOString(),
-            availabilityConfidence: getAvailabilityConfidence({
-              ...product,
-              source: product.source || 'WEB',
-              lastSyncedAt: new Date().toISOString(),
-            }),
-          },
-        })
-        // Decrement farmer sync count
-        if (product.farmerId) {
-          dispatch({ type: 'FARMER_DECREMENT_SYNC_COUNT', payload: product.farmerId })
-        }
-      }
-      
-      // Remove from queue
-      dispatch({ type: 'UI_REMOVE_OFFLINE_ACTION', payload: action.id })
-    }, 100)
-  })
-}
 
 /**
  * Live price suggestion endpoint

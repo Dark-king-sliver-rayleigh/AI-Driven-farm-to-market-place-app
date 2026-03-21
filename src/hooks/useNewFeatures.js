@@ -126,6 +126,36 @@ export function useKPITimeSeries(params = {}) {
 
 // ========== PLATFORM PRICE HOOKS ==========
 
+/**
+ * Hook to fetch product names that have delivered orders.
+ * Used as commodity dropdown for Platform Prices and Demand Forecast pages.
+ */
+export function useTradedCommodities() {
+  const [commodities, setCommodities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchCommodities = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await platformPriceAPI.getTradedCommodities();
+      setCommodities(response.commodities || []);
+    } catch (err) {
+      setError(err.message);
+      setCommodities([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCommodities();
+  }, [fetchCommodities]);
+
+  return { commodities, loading, error, refetch: fetchCommodities };
+}
+
 export function usePlatformPrices(params = {}) {
   const [prices, setPrices] = useState(null);
   const [loading, setLoading] = useState(false);

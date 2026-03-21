@@ -60,6 +60,12 @@ export function ConsumerHomeIntegrated() {
   const [orderError, setOrderError] = useState(null);
   const [orderSuccess, setOrderSuccess] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [deliveryLocation, setDeliveryLocation] = useState({
+    address: '',
+    city: '',
+    state: '',
+    pincode: '',
+  });
 
   // Filter and sort products
   const filteredProducts = products
@@ -87,6 +93,14 @@ export function ConsumerHomeIntegrated() {
 
   const handleOrder = async () => {
     if (!selectedProduct) return;
+    if (!deliveryLocation.address.trim() || !deliveryLocation.city.trim() || !deliveryLocation.state.trim() || !deliveryLocation.pincode.trim()) {
+      setOrderError('Please fill in all delivery location fields.');
+      return;
+    }
+    if (!/^\d{6}$/.test(deliveryLocation.pincode.trim())) {
+      setOrderError('Please enter a valid 6-digit pincode.');
+      return;
+    }
 
     try {
       setOrdering(true);
@@ -94,12 +108,19 @@ export function ConsumerHomeIntegrated() {
 
       await orderAPI.create({
         items: [{ productId: selectedProduct._id, quantity: orderQuantity }],
-        paymentMode: 'COD'
+        paymentMode: 'COD',
+        deliveryLocation: {
+          address: deliveryLocation.address.trim(),
+          city: deliveryLocation.city.trim(),
+          state: deliveryLocation.state.trim(),
+          pincode: deliveryLocation.pincode.trim(),
+        }
       });
 
       setOrderSuccess(`Order placed for ${orderQuantity} ${selectedProduct.unit} of ${selectedProduct.name}!`);
       setSelectedProduct(null);
       setOrderQuantity(1);
+      setDeliveryLocation({ address: '', city: '', state: '', pincode: '' });
       refetch();
       refetchOrders();
 
@@ -380,8 +401,15 @@ export function ConsumerHomeIntegrated() {
       {/* Order Modal */}
       {selectedProduct && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Place Order</h3>
+            
+            {/* Order Error */}
+            {orderError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+                {orderError}
+              </div>
+            )}
             
             <div className="mb-4 p-4 bg-gray-50 rounded-lg">
               <p className="font-medium text-lg">{selectedProduct.name}</p>
@@ -404,6 +432,60 @@ export function ConsumerHomeIntegrated() {
                 max={selectedProduct.quantity}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
+            </div>
+
+            {/* Delivery Location */}
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">🚩</span>
+                <label className="text-sm font-semibold text-gray-800">Delivery Location</label>
+              </div>
+              <p className="text-xs text-gray-500 mb-3">Where should this product be delivered?</p>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Address / Landmark *</label>
+                  <textarea
+                    value={deliveryLocation.address}
+                    onChange={(e) => setDeliveryLocation(prev => ({ ...prev, address: e.target.value }))}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none text-sm"
+                    placeholder="e.g., Flat 201, Green Apartments, MG Road"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">City / Town *</label>
+                    <input
+                      type="text"
+                      value={deliveryLocation.city}
+                      onChange={(e) => setDeliveryLocation(prev => ({ ...prev, city: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                      placeholder="e.g., Pune"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">State *</label>
+                    <input
+                      type="text"
+                      value={deliveryLocation.state}
+                      onChange={(e) => setDeliveryLocation(prev => ({ ...prev, state: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                      placeholder="e.g., Maharashtra"
+                    />
+                  </div>
+                </div>
+                <div className="w-1/2">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Pincode *</label>
+                  <input
+                    type="text"
+                    value={deliveryLocation.pincode}
+                    onChange={(e) => setDeliveryLocation(prev => ({ ...prev, pincode: e.target.value }))}
+                    maxLength="6"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"
+                    placeholder="e.g., 411001"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
@@ -430,6 +512,8 @@ export function ConsumerHomeIntegrated() {
                 onClick={() => {
                   setSelectedProduct(null);
                   setOrderQuantity(1);
+                  setDeliveryLocation({ address: '', city: '', state: '', pincode: '' });
+                  setOrderError(null);
                 }}
                 disabled={ordering}
                 className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"

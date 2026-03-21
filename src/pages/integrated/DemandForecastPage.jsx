@@ -1,7 +1,6 @@
 ﻿import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useCommodities } from '../../hooks/usePriceInsight';
-import { useDemandForecast } from '../../hooks/useNewFeatures';
+import { useTradedCommodities, useDemandForecast } from '../../hooks/useNewFeatures';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export function DemandForecastPage() {
@@ -11,7 +10,7 @@ export function DemandForecastPage() {
   const [horizon, setHorizon] = useState('90d');
   const [generating, setGenerating] = useState(false);
 
-  const { commodities, loading: commLoading } = useCommodities();
+  const { commodities, loading: commLoading } = useTradedCommodities();
   const { forecast, loading, error, refetch, generateForecast } = useDemandForecast(
     commodity ? { commodity, ...(location ? { location } : {}), horizon } : {}
   );
@@ -28,10 +27,16 @@ export function DemandForecastPage() {
     }
   }
 
+  // Map forecast-level confidence string to a numeric value
+  const confidenceMap = { HIGH: 90, MEDIUM: 60, LOW: 30 };
+  const forecastConfidence = confidenceMap[(forecast?.confidence || '').toUpperCase()] || 0;
+
   const weeklyData = (forecast?.weeklyBreakdown || forecast?.weekly || []).map((w, i) => ({
-    week: w.weekLabel || `Week ${w.week || i + 1}`,
+    week: w.weekLabel || `Week ${w.weekNumber || w.week || i + 1}`,
     quantity: w.forecastQty || w.qty || 0,
-    confidence: ((w.confidence || 0) * 100),
+    confidence: forecastConfidence,
+    lowerBound: w.lowerBound || 0,
+    upperBound: w.upperBound || 0,
   }));
 
   const totalQty = weeklyData.reduce((s, w) => s + w.quantity, 0);

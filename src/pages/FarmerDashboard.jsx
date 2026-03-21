@@ -4,6 +4,7 @@ import { updateFarmer } from '../store/actions'
 import { AddProductForm } from '../components/AddProductForm'
 import { InventoryTable } from '../components/InventoryTable'
 import { FeedbackList } from '../components/FeedbackList'
+import { LocationPicker } from '../components/integrated/LocationPicker'
 
 /**
  * Main farmer dashboard page
@@ -30,9 +31,10 @@ export function FarmerDashboard() {
     phone: farmer.phone || '',
     email: farmer.email || '',
     address: farmer.address || '',
+    addressLat: farmer.location?.lat || '',
+    addressLng: farmer.location?.lng || '',
   })
   const [profileImage, setProfileImage] = useState(farmer.profileImage)
-  const [showSMSModal, setShowSMSModal] = useState(false)
 
   const handleProfileImageUpload = (e) => {
     const file = e.target.files[0]
@@ -52,6 +54,11 @@ export function FarmerDashboard() {
       ...farmer,
       ...profileForm,
       profileImage,
+      location: {
+        address: profileForm.address,
+        lat: Number(profileForm.addressLat) || 0,
+        lng: Number(profileForm.addressLng) || 0,
+      },
     }))
     alert('Profile updated successfully!')
   }
@@ -204,19 +211,25 @@ export function FarmerDashboard() {
                 />
               </div>
 
-              {/* Address */}
+              {/* Address with Location Picker */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Address + Village/Taluk/District *
-                </label>
-                <textarea
-                  value={profileForm.address}
-                  onChange={(e) =>
-                    setProfileForm({ ...profileForm, address: e.target.value })
-                  }
-                  rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                <LocationPicker
+                  value={{
+                    address: profileForm.address,
+                    lat: profileForm.addressLat,
+                    lng: profileForm.addressLng,
+                  }}
+                  onChange={(loc) => {
+                    setProfileForm(prev => ({
+                      ...prev,
+                      address: loc.address || '',
+                      addressLat: loc.lat || '',
+                      addressLng: loc.lng || '',
+                    }))
+                  }}
+                  label="📍 Address + Village/Taluk/District *"
                   placeholder="Farm Road, Village, Taluk, District"
+                  showMap={true}
                 />
               </div>
 
@@ -242,24 +255,11 @@ export function FarmerDashboard() {
                   Onboarding Method
                 </label>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">
-                    {farmer.onboardingMethod === 'SMS' ? '📱' : farmer.onboardingMethod === 'VOICE' ? '📞' : '💻'}
-                  </span>
+                  <span className="text-lg">💻</span>
                   <span className="text-sm text-gray-900">{farmer.onboardingMethod || 'WEB'}</span>
                 </div>
               </div>
 
-              {/* Pending Sync Count */}
-              {farmer.pendingSyncCount > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Pending Sync
-                  </label>
-                  <div className="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold">
-                    {farmer.pendingSyncCount} item{farmer.pendingSyncCount !== 1 ? 's' : ''} pending
-                  </div>
-                </div>
-              )}
 
               {/* Ratings */}
               {farmer.ratings && farmer.ratings.count > 0 && (
@@ -292,19 +292,6 @@ export function FarmerDashboard() {
                 </div>
               )}
 
-              {/* SMS/Voice Listing Toggle */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Listing via SMS / Voice
-                </label>
-                <button
-                  onClick={() => setShowSMSModal(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                >
-                  How to list via SMS/Voice
-                </button>
-              </div>
-
               <button
                 onClick={handleProfileSave}
                 className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
@@ -329,50 +316,6 @@ export function FarmerDashboard() {
         </div>
       </div>
 
-      {/* SMS/Voice Modal */}
-      {showSMSModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">How to list via SMS/Voice</h3>
-              <button
-                onClick={() => setShowSMSModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ×
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-medium mb-2">SMS Format:</h4>
-                <div className="bg-gray-50 p-3 rounded text-sm font-mono">
-                  LIST [Crop Name] [Quantity] [Unit] [Price] [Address]
-                </div>
-                <p className="text-xs text-gray-600 mt-1">
-                  Example: LIST Tomato 100 kg 25 Near Demo Village
-                </p>
-              </div>
-              <div>
-                <h4 className="font-medium mb-2">Short Codes:</h4>
-                <ul className="list-disc list-inside text-sm space-y-1">
-                  <li>Send to: <strong>AGRO-123</strong></li>
-                  <li>For help: <strong>HELP</strong></li>
-                  <li>To check status: <strong>STATUS</strong></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-medium mb-2">Voice:</h4>
-                <p className="text-sm text-gray-600">
-                  Call <strong>+91-XXX-XXX-XXXX</strong> and follow the IVR prompts to list your product.
-                </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  TODO: Integrate real SMS gateway (Twilio/MSG91) and IVR parser for voice uploads
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

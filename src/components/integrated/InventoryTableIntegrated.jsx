@@ -18,15 +18,13 @@ export function InventoryTableIntegrated({ products, loading, error, onRefresh }
   const statusColors = {
     AVAILABLE: 'bg-green-100 text-green-800',
     NOT_HARVESTED: 'bg-gray-100 text-gray-800',
-    PRE_ORDER: 'bg-blue-100 text-blue-800',
-    ON_HOLD_OFFLINE: 'bg-yellow-100 text-yellow-800'
+    PRE_ORDER: 'bg-blue-100 text-blue-800'
   };
 
   const statusLabels = {
     AVAILABLE: 'Available',
     NOT_HARVESTED: 'Not Harvested',
-    PRE_ORDER: 'Pre-Order',
-    ON_HOLD_OFFLINE: 'On Hold'
+    PRE_ORDER: 'Pre-Order'
   };
 
   const showSuccess = (message) => {
@@ -188,7 +186,6 @@ export function InventoryTableIntegrated({ products, loading, error, onRefresh }
                       <option value="AVAILABLE">Available</option>
                       <option value="NOT_HARVESTED">Not Harvested</option>
                       <option value="PRE_ORDER">Pre-Order</option>
-                      <option value="ON_HOLD_OFFLINE">On Hold</option>
                     </select>
                     
                     {/* Restock Button */}

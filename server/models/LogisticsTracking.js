@@ -167,8 +167,7 @@ const LogisticsTrackingSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Order',
     required: [true, 'Order ID is required'],
-    unique: true,
-    index: true
+    unique: true
   },
   
   // Reference to the delivery record

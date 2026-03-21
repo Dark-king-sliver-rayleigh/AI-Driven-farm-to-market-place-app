@@ -37,14 +37,12 @@ export function mockPriceSuggestion(product) {
   if (product.quantity > 100) confidence += 0.1
   if (product.quantity > 500) confidence += 0.1
   if (product.source === 'WEB') confidence += 0.05
-  if (product.source === 'SMS' || product.source === 'VOICE') confidence -= 0.1
   
   confidence = Math.min(0.95, Math.max(0.3, confidence))
   
   // Rationale ID based on factors
   let rationaleId = 'r1'
   if (product.quantity > 500) rationaleId = 'r2' // bulk pricing
-  if (product.source === 'SMS' || product.source === 'VOICE') rationaleId = 'r3' // limited data
   
   return {
     value: Math.round(suggestedValue * 100) / 100,

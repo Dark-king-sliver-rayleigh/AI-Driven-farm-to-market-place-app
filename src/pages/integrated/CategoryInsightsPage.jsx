@@ -8,7 +8,10 @@ import { MarketOverviewCard } from '../../components/farmer/MarketOverviewCard';
  */
 export function CategoryInsightsPage() {
   const { categoryId } = useParams();
-  const { category, commodities, totalCommodities, loading, error, refetch } = useCategoryInsights(categoryId);
+  const { category, commodities: allCommodities, totalCommodities, loading, error, refetch } = useCategoryInsights(categoryId);
+
+  // Only show commodities that have actual price data
+  const commodities = allCommodities.filter(c => c.hasData);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -25,7 +28,7 @@ export function CategoryInsightsPage() {
             {category?.icon || '📊'} {category?.name || 'Category'} Market Insights
           </h1>
           <p className="text-gray-600 text-sm">
-            {totalCommodities} commodities in this category
+            {commodities.length} commodities with price data
           </p>
         </div>
         <button
@@ -86,16 +89,9 @@ export function CategoryInsightsPage() {
           {/* Summary stats */}
           <div className="bg-white rounded-xl shadow-md p-4 mb-6 flex items-center gap-6">
             <div>
-              <span className="text-sm text-gray-600">With Price Data</span>
+              <span className="text-sm text-gray-600">Commodities with Price Data</span>
               <span className="block text-2xl font-bold text-green-600">
-                {commodities.filter(c => c.hasData).length}
-              </span>
-            </div>
-            <div className="h-10 w-px bg-gray-200" />
-            <div>
-              <span className="text-sm text-gray-600">Total in Category</span>
-              <span className="block text-2xl font-bold text-gray-800">
-                {totalCommodities}
+                {commodities.length}
               </span>
             </div>
           </div>
@@ -103,33 +99,23 @@ export function CategoryInsightsPage() {
           {/* Commodity cards */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {commodities.map((item) => (
-              item.hasData ? (
-                <MarketOverviewCard
-                  key={item.commodity}
-                  commodity={item.commodity}
-                  mandi={item.mandi}
-                  location={item.location}
-                  suggestedPrice={item.suggestedPrice}
-                  minPrice={item.minPrice}
-                  maxPrice={item.maxPrice}
-                  trend={item.trend}
-                  confidence={item.confidence}
-                  varieties={item.varieties}
-                  avgArrivals={item.avgArrivals}
-                  sources={item.sources}
-                  dataFreshness={item.dataFreshness}
-                  msp={item.msp}
-                  latestPriceDate={item.latestPriceDate}
-                />
-              ) : (
-                <div
-                  key={item.commodity}
-                  className="bg-gray-50 border border-gray-200 rounded-xl p-5 opacity-75"
-                >
-                  <h3 className="text-lg font-bold text-gray-600">{item.commodity}</h3>
-                  <p className="text-sm text-gray-500 mt-2">No recent market data available</p>
-                </div>
-              )
+              <MarketOverviewCard
+                key={item.commodity}
+                commodity={item.commodity}
+                mandi={item.mandi}
+                location={item.location}
+                suggestedPrice={item.suggestedPrice}
+                minPrice={item.minPrice}
+                maxPrice={item.maxPrice}
+                trend={item.trend}
+                confidence={item.confidence}
+                varieties={item.varieties}
+                avgArrivals={item.avgArrivals}
+                sources={item.sources}
+                dataFreshness={item.dataFreshness}
+                msp={item.msp}
+                latestPriceDate={item.latestPriceDate}
+              />
             ))}
           </div>
         </div>

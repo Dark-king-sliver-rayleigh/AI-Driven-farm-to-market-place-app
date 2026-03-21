@@ -1,6 +1,6 @@
 # AgroDirect - Farm Marketplace
 
-A comprehensive farm marketplace platform connecting farmers, consumers, and logistics partners. This project implements the **Farmer Interface** with full CRUD operations, order management, logistics tracking, and transaction history.
+A full-stack farm marketplace platform connecting farmers, consumers, and logistics partners. The current app includes API-backed authentication, product management, consumer ordering, logistics assignment/tracking, price intelligence, and demand forecasting.
 
 ## 🚀 Features
 
@@ -44,46 +44,30 @@ A comprehensive farm marketplace platform connecting farmers, consumers, and log
    - Average rating display
    - Review comments
 
-### Updated: Offline/SMS/Voice, Escrow, Price Suggestion
+### Additional Features
 
-7. **Offline & SMS/Voice Listing Support**
-   - Farmers can list products via SMS or voice calls
-   - Offline mode with sync queue management
-   - Pending sync count tracking
-   - SMS/Voice format instructions and short codes
-   - TODO: Integrate real SMS gateway (Twilio/MSG91) and IVR parser for voice uploads
-
-8. **Price Intelligence**
+7. **Price Intelligence**
    - AI-powered price suggestions with confidence scores
    - Rationale display (MSP, mandi rates, trends)
    - Accept/Override price suggestions
    - Negotiation with predicted farmer acceptance likelihood
    - Live API wiring to Price Insight backend (with offline fallback)
 
-9. **Escrow System**
-   - Payment held in escrow until delivery verification
-   - Escrow status tracking (HELD, RELEASED, DISPUTED)
-   - Consumer confirmation required at checkout
-   - Dispute resolution flow
-   - TODO: Integrate payment gateway supporting UPI and payment holds / escrow (production compliance required)
-
-10. **Delivery Audit Trail**
+8. **Delivery Audit Trail**
     - Photo evidence at each delivery milestone
     - GPS tracking with Leaflet maps
-    - SMS timeline fallback when GPS unavailable
     - Delivery audit entries with timestamps and agent IDs
 
-11. **Enhanced Order Management**
+9. **Enhanced Order Management**
     - Availability confidence badges (HIGH, MEDIUM, LOW)
-    - Source indicators (WEB, MOBILE, SMS, VOICE)
-    - Product status: NOT_HARVESTED, PRE_ORDER, ON_HOLD_OFFLINE, OUT_OF_STOCK
+    - Source indicators (WEB, MOBILE)
+    - Product status: NOT_HARVESTED, PRE_ORDER, OUT_OF_STOCK
     - Negotiation chat with price suggestion tags
     - Logistics agent assignment and route tracking
 
-12. **Transaction Enhancements**
+10. **Transaction Enhancements**
     - Pending disbursements list with ETA and reason codes
     - CSV export for settlement statements
-    - Escrow status in order details
 
 ## 🛠️ Tech Stack
 
@@ -92,8 +76,9 @@ A comprehensive farm marketplace platform connecting farmers, consumers, and log
 - **Tailwind CSS v4** - Styling
 - **React Router v6** - Routing
 - **Leaflet + React-Leaflet** - Map integration
-- **Context API + useReducer** - State management
-- **localStorage** - Mock database persistence
+- **Express + MongoDB + Mongoose** - Backend API and persistence
+- **JWT Authentication** - Role-based access control
+- **Context API** - Frontend auth/session state
 - **Vitest** - Testing framework
 
 ## 📦 Installation
@@ -135,7 +120,7 @@ A comprehensive farm marketplace platform connecting farmers, consumers, and log
 
 2. **Access the application**
    - Open your browser to `http://localhost:5173`
-   - Use the **Role Switcher** in the top-right corner to switch to "Farmer" role
+   - Register or log in as `FARMER`, `CONSUMER`, or `LOGISTICS`
 
 3. **Navigate the interface**
    - **Dashboard**: Manage profile, add products, view inventory, and feedback
@@ -177,35 +162,20 @@ A comprehensive farm marketplace platform connecting farmers, consumers, and log
 
 ```
 Major Project/
-├── src/
-│   ├── components/
-│   │   ├── AddProductForm.jsx      # Product creation form
-│   │   ├── InventoryTable.jsx      # Inventory management table
-│   │   ├── NegotiationChat.jsx     # Order negotiation chat
-│   │   ├── FeedbackList.jsx         # Ratings and reviews
-│   │   └── RoleSwitcher.jsx         # Demo role switcher
-│   ├── pages/
-│   │   ├── FarmerDashboard.jsx      # Main dashboard
-│   │   ├── Orders.jsx               # Order management
-│   │   ├── MapTracker.jsx           # Logistics tracking
-│   │   └── Transactions.jsx         # Transaction history
-│   ├── store/
-│   │   ├── StoreContext.jsx         # Global state context
-│   │   ├── reducers.js              # State reducers
-│   │   └── actions.js               # Action creators
-│   ├── utils/
-│   │   ├── units.js                 # Unit conversion & currency
-│   │   ├── storage.js               # localStorage adapter
-│   │   ├── seedData.js              # Demo data generator
-│   │   └── mockWebSocket.js         # Mock WebSocket for chat
-│   ├── App.jsx                      # Main app with routing
-│   ├── main.jsx                     # Entry point
-│   └── index.css                    # Global styles
-├── tests/
-│   └── integration.test.js          # Integration tests
+├── src/                             # React frontend
+│   ├── components/                  # Shared and role-specific UI
+│   ├── pages/integrated/            # API-backed role dashboards
+│   ├── context/                     # Auth and tracking context
+│   ├── hooks/                       # Data fetching hooks
+│   └── services/                    # Frontend API clients
+├── server/                          # Express backend
+│   ├── controllers/                 # Route handlers
+│   ├── models/                      # Mongoose schemas
+│   ├── routes/                      # API endpoints
+│   ├── services/                    # Domain services
+│   └── utils/                       # Helpers, schedulers, storage
+├── tests/                           # Vitest test suite
 ├── package.json
-├── vite.config.js
-├── tailwind.config.js
 └── README.md
 ```
 
@@ -276,21 +246,17 @@ Major Project/
 
 ## 💾 Data Persistence
 
-- All data is stored in **localStorage** under the key `agrodirect:mockdb:v1`
-- Data persists across page refreshes
-- Seed data is automatically loaded on first run
-- To reset data, clear localStorage in browser dev tools
+- Core application data is stored in **MongoDB**
+- Auth session data is stored in **sessionStorage** on the frontend
+- Product images are stored as uploaded files under `server/uploads/` and persisted in MongoDB as URLs
 
 ## 🔧 Configuration
 
-### Storage Key
-The localStorage key can be changed in `src/utils/storage.js`:
-```javascript
-const STORAGE_KEY = 'agrodirect:mockdb:v1'
-```
+### Frontend API URL
+Set `VITE_API_URL` in `.env` to your backend API base URL.
 
-### Seed Data
-Modify `src/utils/seedData.js` to customize initial demo data.
+### Server Public URL
+Optional: set `PUBLIC_SERVER_URL` on the backend if uploaded image URLs need an explicit public host.
 
 ## 🧪 Testing
 
@@ -307,34 +273,24 @@ Test coverage includes:
 
 ## 🚧 TODO / Future Enhancements
 
-### Production Integrations Required
+### Current Remaining Enhancements
 
-1. **SMS Gateway**: Integrate real SMS gateway (Twilio/MSG91) for SMS listing support
-2. **IVR Parser**: Integrate IVR parser for voice uploads
-3. ~~**Price Intelligence API**: Replace priceEngineMock with real price-intelligence API~~ ✅ **DONE** — Frontend wired to live Price Insight API with graceful offline fallback
-4. **Payment Gateway**: Integrate payment gateway supporting UPI and payment holds / escrow (production compliance required)
-5. **Reconciliation Service**: Reconcile offline queue using server-side reconciliation endpoints and conflict resolution
-
-### Other Enhancements
-
-6. **Image Storage**: Migrate from base64 to cloud storage (AWS S3, Cloudinary)
-7. **Authentication**: Implement real authentication system
-8. **Real WebSocket**: Replace mock WebSocket with real-time messaging
-9. **Mobile App**: React Native version
-10. **Admin Interface**: Complete admin dashboard
-11. **Consumer Interface**: Build consumer-facing features
-12. **Logistics Interface**: Complete logistics partner features
+1. **Cloud Media Storage**: Uploaded product/profile images are now stored as server files; move the storage adapter to S3/Cloudinary for production.
+2. **Real-Time Negotiation Chat**: Legacy negotiation chat is still local/mock and should be replaced with socket-based messaging.
+3. **Multi-language Support**: UI copy and date/number formatting are still mostly hardcoded.
+4. **Payments**: Current checkout flow is COD-first with limited online-payment handling.
+5. **Broader Test Coverage**: Integrated frontend flows still need stronger end-to-end coverage.
 
 ## 📝 Notes
 
-- **Images**: Currently stored as base64 data URLs. In production, upload to cloud storage.
-- **Authentication**: Uses a demo role switcher. Real authentication should be implemented.
-- **WebSocket**: Mock implementation for chat. Replace with real WebSocket server.
+- **Images**: Product images are stored as server-hosted files and referenced by URL.
+- **Authentication**: JWT-based authentication is implemented for all three roles.
+- **WebSocket**: The active app is API-driven; legacy negotiation chat still uses mock behavior.
 - **Maps**: Uses OpenStreetMap tiles. Consider Mapbox for production.
 
 ## 🤝 Contributing
 
-This is a prototype project. Future interfaces (Consumer, Logistics, Admin) will be added incrementally.
+This project is still evolving, but the consumer and logistics interfaces are already present in the current integrated app.
 
 ## 📄 License
 

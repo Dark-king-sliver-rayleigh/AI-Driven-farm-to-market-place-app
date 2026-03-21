@@ -34,10 +34,9 @@ export function SupportDispute({ order, onClose }) {
     // Update order with dispute status
     dispatch(updateOrder({
       ...order,
-      escrowStatus: 'DISPUTED',
+      status: 'DISPUTED',
     }))
 
-    // TODO: Integrate payment gateway supporting UPI and payment holds / escrow (production compliance required)
     // In production, this would create a dispute record and notify support team
 
     alert('Dispute raised successfully. Support team will review your case.')

@@ -224,7 +224,7 @@ export const logisticsAPI = {
   async acceptOrder(orderId, locationData) {
     return apiRequest(`/logistics/orders/${orderId}/accept`, {
       method: 'POST',
-      body: JSON.stringify(locationData)
+      body: JSON.stringify(locationData || {})
     });
   },
 
@@ -520,6 +520,10 @@ export const platformPriceAPI = {
   async comparePrices(params = {}) {
     const query = new URLSearchParams(params).toString();
     return apiRequest(`/farmer/price-insight/compare${query ? '?' + query : ''}`);
+  },
+  /** Get product names that have delivered orders (for commodity dropdown) */
+  async getTradedCommodities() {
+    return apiRequest('/farmer/platform-prices/commodities');
   }
 };
 

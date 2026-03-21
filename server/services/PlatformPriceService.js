@@ -25,6 +25,36 @@ const MarketPrice = require('../models/MarketPrice');
 
 class PlatformPriceService {
 
+  /** Escape regex metacharacters so user input is treated as literal text */
+  static _escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  /**
+   * Get list of product names that have at least one DELIVERED order.
+   * Used by the frontend for the commodity dropdown on Platform Prices
+   * and Demand Forecast pages.
+   */
+  static async getTradedCommodities() {
+    const since = new Date(Date.now() - 365 * 86400000); // last year
+
+    const orders = await Order.find({
+      orderStatus: 'DELIVERED',
+      updatedAt: { $gte: since }
+    }).select('items').populate('items.productId', 'name');
+
+    const nameSet = new Set();
+    for (const order of orders) {
+      for (const item of order.items) {
+        if (item.productId && item.productId.name) {
+          nameSet.add(item.productId.name);
+        }
+      }
+    }
+
+    return Array.from(nameSet).sort();
+  }
+
   /**
    * Get aggregated platform prices for a commodity.
    *
@@ -38,9 +68,11 @@ class PlatformPriceService {
   static async getPlatformPrices({ commodity, from, to }) {
     if (!commodity) throw new Error('commodity is required');
 
+    const escaped = this._escapeRegex(commodity);
+
     // 1. Find products matching the commodity name
     const products = await Product.find({
-      name: { $regex: new RegExp(commodity, 'i') },
+      name: { $regex: new RegExp(escaped, 'i') },
       isDeleted: false
     }).select('_id name price unit');
 
@@ -133,9 +165,12 @@ class PlatformPriceService {
       if (to) dateFilter.date.$lte = new Date(to);
     }
 
+    const escapedCommodity = this._escapeRegex(commodity);
+    const escapedMandi = this._escapeRegex(mandi);
+
     const mandiPrices = await MarketPrice.find({
-      commodity: { $regex: new RegExp(commodity, 'i') },
-      mandi: { $regex: new RegExp(mandi, 'i') },
+      commodity: { $regex: new RegExp(escapedCommodity, 'i') },
+      mandi: { $regex: new RegExp(escapedMandi, 'i') },
       ...dateFilter
     }).sort({ date: -1 });
 
@@ -152,14 +187,29 @@ class PlatformPriceService {
       mandiMax = Math.max(...mandiPrices.map(p => p.maxPrice));
     }
 
-    // Calculate spread
+    // Convert mandi prices from Rs/Quintal to same unit as platform (e.g. Rs/kg)
+    // 1 Quintal = 100 kg
+    const platformUnit = platformData.unit || 'kg';
+    let mandiAvgConverted = mandiAvgPrice;
+    let mandiMinConverted = mandiMin;
+    let mandiMaxConverted = mandiMax;
+    let mandiDisplayUnit = 'Rs./Quintal';
+
+    if (mandiAvgPrice !== null && platformUnit === 'kg') {
+      mandiAvgConverted = Math.round((mandiAvgPrice / 100) * 100) / 100;
+      mandiMinConverted = mandiMin !== null ? Math.round((mandiMin / 100) * 100) / 100 : null;
+      mandiMaxConverted = mandiMax !== null ? Math.round((mandiMax / 100) * 100) / 100 : null;
+      mandiDisplayUnit = `Rs./${platformUnit} (converted from Rs./Quintal)`;
+    }
+
+    // Calculate spread using same-unit prices
     const platformPrice = platformData.weightedAveragePrice;
     let spread = null;
     let spreadPct = null;
 
-    if (platformPrice && mandiAvgPrice) {
-      spread = Math.round((platformPrice - mandiAvgPrice) * 100) / 100;
-      spreadPct = Math.round((spread / mandiAvgPrice) * 100 * 100) / 100;
+    if (platformPrice && mandiAvgConverted) {
+      spread = Math.round((platformPrice - mandiAvgConverted) * 100) / 100;
+      spreadPct = Math.round((spread / mandiAvgConverted) * 100 * 100) / 100;
     }
 
     return {
@@ -173,21 +223,23 @@ class PlatformPriceService {
         maxPrice: platformData.maxPrice,
         volume: platformData.totalVolume,
         orderCount: platformData.orderCount,
-        unit: platformData.unit
+        unit: platformUnit
       },
       mandiPrice: {
-        averageModalPrice: mandiAvgPrice,
-        minPrice: mandiMin,
-        maxPrice: mandiMax,
+        averageModalPrice: mandiAvgConverted,
+        minPrice: mandiMinConverted,
+        maxPrice: mandiMaxConverted,
         dataPoints: mandiDataPoints,
-        unit: 'Rs./Quintal'
+        unit: mandiDisplayUnit,
+        rawUnit: 'Rs./Quintal',
+        rawAverageModalPrice: mandiAvgPrice
       },
       comparison: {
         spread,
         spreadPct,
         platformVsMandi: spread > 0 ? 'PLATFORM_HIGHER' : spread < 0 ? 'MANDI_HIGHER' : 'EQUAL',
-        note: platformPrice && mandiAvgPrice
-          ? `Platform price is ${Math.abs(spreadPct)}% ${spread > 0 ? 'above' : 'below'} mandi average`
+        note: platformPrice && mandiAvgConverted
+          ? `Platform price is ${Math.abs(spreadPct)}% ${spread > 0 ? 'above' : 'below'} mandi average (per ${platformUnit})`
           : 'Insufficient data for comparison'
       }
     };

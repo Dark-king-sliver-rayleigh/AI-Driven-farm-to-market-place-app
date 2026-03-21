@@ -85,7 +85,31 @@ const comparePrices = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Get list of product names that have at least one delivered order
+ * @route   GET /api/farmer/platform-prices/commodities
+ * @access  Private (FARMER)
+ */
+const getTradedCommodities = async (req, res) => {
+  try {
+    const commodities = await PlatformPriceService.getTradedCommodities();
+    res.status(200).json({
+      success: true,
+      count: commodities.length,
+      commodities
+    });
+  } catch (error) {
+    console.error('getTradedCommodities error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching traded commodities',
+      commodities: []
+    });
+  }
+};
+
 module.exports = {
   getPlatformPrices,
-  comparePrices
+  comparePrices,
+  getTradedCommodities
 };

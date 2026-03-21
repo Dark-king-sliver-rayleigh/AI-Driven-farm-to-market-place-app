@@ -1,7 +1,7 @@
 ﻿import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useCommodities, useMandis } from '../../hooks/usePriceInsight';
-import { usePlatformPrices, usePriceComparison } from '../../hooks/useNewFeatures';
+import { useMandis } from '../../hooks/usePriceInsight';
+import { useTradedCommodities, usePlatformPrices, usePriceComparison } from '../../hooks/useNewFeatures';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 export function PlatformPricesPage() {
@@ -11,7 +11,7 @@ export function PlatformPricesPage() {
   const [dateRange, setDateRange] = useState('30d');
   const [activeTab, setActiveTab] = useState('prices');
 
-  const { commodities, loading: commLoading } = useCommodities();
+  const { commodities, loading: commLoading } = useTradedCommodities();
   const { mandis, loading: mandiLoading } = useMandis(commodity);
 
   const dateParams = (() => {
@@ -31,13 +31,14 @@ export function PlatformPricesPage() {
     commodity && mandi ? { commodity, mandi } : {}
   );
 
-  const compData = comparison?.comparison || comparison;
+  // Use full comparison response; nested .comparison has spread info
+  const compStats = comparison?.comparison || {};
 
-  const barChartData = compData ? [
+  const barChartData = comparison ? [
     {
       name: commodity || 'Commodity',
-      'Platform Price': compData.platformPrice?.weightedAvgPrice || compData.platformAvgPrice || 0,
-      'Mandi Price': compData.mandiPrice?.avgPrice || compData.mandiAvgPrice || 0,
+      'Platform Price': comparison.platformPrice?.weightedAveragePrice || 0,
+      'Mandi Price': comparison.mandiPrice?.averageModalPrice || 0,
     }
   ] : [];
 
@@ -147,7 +148,7 @@ export function PlatformPricesPage() {
               <div className="bg-white rounded-2xl p-5 shadow-sm">
                 <p className="text-gray-400 text-xs font-medium uppercase">Weighted Avg</p>
                 <p className="text-3xl font-bold text-green-600 mt-1">
-                  &#x20B9;{(prices.weightedAvgPrice || prices.data?.weightedAvgPrice || 0).toFixed(2)}
+                  &#x20B9;{(prices.weightedAveragePrice || prices.weightedAvgPrice || 0).toFixed(2)}
                 </p>
                 <p className="text-gray-400 text-xs mt-1">per unit</p>
               </div>
@@ -190,14 +191,14 @@ export function PlatformPricesPage() {
             </div>
           )}
 
-          {!compLoading && compData && (
+          {!compLoading && comparison && (
             <>
               {/* Comparison Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-5 text-white shadow-lg">
                   <p className="text-green-100 text-sm">Platform Price</p>
                   <p className="text-3xl font-bold mt-1">
-                    &#x20B9;{(compData.platformPrice?.weightedAvgPrice || compData.platformAvgPrice || 0).toFixed(2)}
+                    &#x20B9;{(comparison.platformPrice?.weightedAveragePrice || 0).toFixed(2)}
                   </p>
                   <p className="text-green-200 text-xs mt-2">Your selling price on AgroDirect</p>
                 </div>
@@ -205,23 +206,23 @@ export function PlatformPricesPage() {
                 <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-5 text-white shadow-lg">
                   <p className="text-blue-100 text-sm">Mandi Price</p>
                   <p className="text-3xl font-bold mt-1">
-                    &#x20B9;{(compData.mandiPrice?.avgPrice || compData.mandiAvgPrice || 0).toFixed(2)}
+                    &#x20B9;{(comparison.mandiPrice?.averageModalPrice || 0).toFixed(2)}
                   </p>
-                  <p className="text-blue-200 text-xs mt-2">Average at {mandi}</p>
+                  <p className="text-blue-200 text-xs mt-2">Average at {mandi} (converted to per-unit)</p>
                 </div>
 
                 <div className={`rounded-2xl p-5 text-white shadow-lg ${
-                  (compData.spreadPct || compData.spread?.pct || 0) >= 0
+                  (compStats.spreadPct || 0) >= 0
                     ? 'bg-gradient-to-br from-emerald-500 to-emerald-600'
                     : 'bg-gradient-to-br from-red-500 to-red-600'
                 }`}>
                   <p className="text-white/80 text-sm">Spread</p>
                   <p className="text-3xl font-bold mt-1">
-                    {(compData.spreadPct || compData.spread?.pct || 0) >= 0 ? '+' : ''}
-                    {(compData.spreadPct || compData.spread?.pct || 0).toFixed(1)}%
+                    {(compStats.spreadPct || 0) >= 0 ? '+' : ''}
+                    {(compStats.spreadPct || 0).toFixed(1)}%
                   </p>
                   <p className="text-white/70 text-xs mt-2">
-                    &#x20B9;{(compData.spreadAmount || compData.spread?.amount || 0).toFixed(2)} difference
+                    &#x20B9;{Math.abs(compStats.spread || 0).toFixed(2)} difference
                   </p>
                 </div>
               </div>
@@ -246,18 +247,18 @@ export function PlatformPricesPage() {
 
               {/* Insight */}
               <div className={`border rounded-2xl p-5 ${
-                (compData.spreadPct || compData.spread?.pct || 0) >= 0
+                (compStats.spreadPct || 0) >= 0
                   ? 'bg-green-50 border-green-200'
                   : 'bg-red-50 border-red-200'
               }`}>
                 <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                  {(compData.spreadPct || compData.spread?.pct || 0) >= 0 ? '\u2705' : '\u26A0\uFE0F'}
+                  {(compStats.spreadPct || 0) >= 0 ? '\u2705' : '\u26A0\uFE0F'}
                   {' '}Price Insight
                 </h3>
                 <p className="text-gray-600 mt-2 text-sm">
-                  {(compData.spreadPct || compData.spread?.pct || 0) >= 0
-                    ? `You are earning ${(compData.spreadPct || compData.spread?.pct || 0).toFixed(1)}% more than the average mandi price for ${commodity} at ${mandi}. Keep selling on the platform!`
-                    : `Your platform price is ${Math.abs(compData.spreadPct || compData.spread?.pct || 0).toFixed(1)}% lower than the mandi. Consider adjusting your pricing.`
+                  {(compStats.spreadPct || 0) >= 0
+                    ? `You are earning ${(compStats.spreadPct || 0).toFixed(1)}% more than the average mandi price for ${commodity} at ${mandi}. Keep selling on the platform!`
+                    : `Your platform price is ${Math.abs(compStats.spreadPct || 0).toFixed(1)}% lower than the mandi. Consider adjusting your pricing.`
                   }
                 </p>
               </div>

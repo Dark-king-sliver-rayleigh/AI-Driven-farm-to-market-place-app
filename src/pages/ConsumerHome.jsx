@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store/index'
 import { ProductCard } from '../components/ProductCard'
+import { WEIGHT_UNITS } from '../utils/units'
 
 // Helper function for availability confidence (add this temporarily)
 function getAvailabilityConfidence(product) {
@@ -15,6 +16,7 @@ export function ConsumerHome() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('recent')
+  const [displayUnit, setDisplayUnit] = useState('kg')
 
   const products = useMemo(() => {
     let list = state.products.filter((p) => p.status !== 'NOT_HARVESTED')
@@ -141,6 +143,28 @@ export function ConsumerHome() {
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                    Weight Unit
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={displayUnit}
+                      onChange={(e) => setDisplayUnit(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm appearance-none focus:ring-2 focus:ring-primary-500 outline-none cursor-pointer"
+                    >
+                      {WEIGHT_UNITS.map((u) => (
+                        <option key={u} value={u}>
+                          {u === 'kg' ? '⚖️ Kilogram (kg)' : u === 'quintal' ? '📦 Quintal' : u === 'ton' ? '🏗️ Ton' : '🔢 Pound (lb)'}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">
+                      ▼
+                    </div>
+                  </div>
+                </div>
+
                 <div className="pt-4 border-t border-gray-100">
                   <div className="p-4 bg-primary-50 rounded-xl text-xs text-primary-700 leading-relaxed">
                     <strong>Tip:</strong> You can filter by organic certification and distance in the advanced view.
@@ -164,6 +188,7 @@ export function ConsumerHome() {
                   <ProductCard
                     key={product.id}
                     product={product}
+                    displayUnit={displayUnit}
                     onView={() => navigate(`/consumer/product/${product.id}`)}
                     onAddToCart={() => handleAddToCart(product)}
                     onContactFarmer={() => handleContactFarmer(product)}
