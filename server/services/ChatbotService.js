@@ -153,7 +153,7 @@ RULES:
 2. When discussing prices, ALWAYS use the "MARKET PRICE DATA" section below. NEVER say a commodity is not listed if it appears in the data.
 3. When the user asks about a specific commodity, respond with EXACTLY this format:
    📊 **[Commodity Name]**
-   • Price: ₹[price]/quintal
+   • Price: ₹[price]/[unit] (use the actual unit from market data, e.g. quintal, kg, each, dozen)
    • APMC/Mandi: [mandi name], [state]
    • Date: [date]
    Keep it to ONE price entry per commodity-mandi unless the user asks for more.
@@ -239,6 +239,7 @@ RULES:
               modalPrice: { $first: '$modalPrice' },
               minPrice: { $first: '$minPrice' },
               maxPrice: { $first: '$maxPrice' },
+              unit: { $first: '$unit' },
               date: { $first: '$date' }
             }
           },
@@ -259,6 +260,7 @@ RULES:
                 modalPrice: { $first: '$modalPrice' },
                 minPrice: { $first: '$minPrice' },
                 maxPrice: { $first: '$maxPrice' },
+                unit: { $first: '$unit' },
                 date: { $first: '$date' }
               }
             },
@@ -269,7 +271,8 @@ RULES:
         if (matchedPrices.length > 0) {
           targetedContext += '\n=== MARKET PRICE DATA ===\n';
           for (const p of matchedPrices) {
-            targetedContext += `- ${p.commodity} | APMC/Mandi: ${p.mandi}, ${p.state} | Price: ₹${p.modalPrice}/quintal | Date: ${p.date?.toISOString?.() ? p.date.toISOString().slice(0, 10) : new Date(p.date).toISOString().slice(0, 10)}\n`;
+            const unitLabel = (p.unit || 'Rs./Quintal').replace(/^Rs\.\//, '').toLowerCase();
+            targetedContext += `- ${p.commodity} | APMC/Mandi: ${p.mandi}, ${p.state} | Price: ₹${p.modalPrice}/${unitLabel} | Date: ${p.date?.toISOString?.() ? p.date.toISOString().slice(0, 10) : new Date(p.date).toISOString().slice(0, 10)}\n`;
           }
         }
       }
@@ -286,6 +289,7 @@ RULES:
               mandi: { $first: '$mandi' },
               state: { $first: '$state' },
               modalPrice: { $first: '$modalPrice' },
+              unit: { $first: '$unit' },
               date: { $first: '$date' },
               count: { $sum: 1 }
             }
@@ -297,7 +301,8 @@ RULES:
         if (recentPrices.length > 0) {
           generalContext += 'Top commodities on platform:\n';
           for (const p of recentPrices) {
-            generalContext += `- ${p._id} | APMC/Mandi: ${p.mandi}, ${p.state} | ₹${Math.round(p.modalPrice)}/quintal | Date: ${p.date?.toISOString?.() ? p.date.toISOString().slice(0, 10) : new Date(p.date).toISOString().slice(0, 10)}\n`;
+            const unitLabel = (p.unit || 'quintal').replace(/^Rs\.\//, '').toLowerCase();
+            generalContext += `- ${p._id} | APMC/Mandi: ${p.mandi}, ${p.state} | ₹${Math.round(p.modalPrice)}/${unitLabel} | Date: ${p.date?.toISOString?.() ? p.date.toISOString().slice(0, 10) : new Date(p.date).toISOString().slice(0, 10)}\n`;
           }
         }
       }

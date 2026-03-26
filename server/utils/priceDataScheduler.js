@@ -1,20 +1,25 @@
 /**
  * Price Data Scheduler
- * 
- * Background job scheduler for:
- * 1. Daily price fetch from data.gov.in (6 AM IST)
- * 2. Daily pruning of old records (2 AM IST)
- * 
+ *
+ * Background job scheduler for the full price intelligence pipeline:
+ *   1. Daily price fetch from data.gov.in (MandiPriceService + VarietyPriceService)
+ *   2. Data cleaning + standardization (CleanedPriceService)
+ *   3. Feature engineering — lag/rolling/seasonal features (FeatureEngineeringService)
+ *   4. Daily pruning of old raw records (DataPruningService)
+ *   5. Demand forecasting (DemandForecastService)
+ *
  * ACADEMIC NOTE:
- * - Uses simple setInterval for scheduling (no external dependencies)
- * - Runs automatically on server startup
- * - Respects API rate limits with built-in delays
+ * - Each stage runs sequentially to avoid race conditions
+ * - Cleaning and feature computation trigger only after new data arrives
+ * - Model retraining is triggered conditionally (new data > 10% or 7 days elapsed)
  */
 const MandiPriceService = require('../services/MandiPriceService');
 const VarietyPriceService = require('../services/VarietyPriceService');
 const DataPruningService = require('../services/DataPruningService');
 const DataFreshnessService = require('../services/DataFreshnessService');
 const DemandForecastService = require('../services/DemandForecastService');
+const CleanedPriceService = require('../services/CleanedPriceService');
+const FeatureEngineeringService = require('../services/FeatureEngineeringService');
 
 class PriceDataScheduler {
   constructor() {
@@ -26,6 +31,9 @@ class PriceDataScheduler {
     this.lastFetchTime = null;
     this.lastPruneTime = null;
     this.lastForecastTime = null;
+    this.lastCleanTime = null;
+    this.lastFeatureTime = null;
+    this.lastTrainDataPointCount = 0; // tracks data volume for retrain trigger
   }
 
   /**
@@ -192,6 +200,61 @@ class PriceDataScheduler {
     const totalInserted = (results.mandi?.recordsInserted || 0) + (results.variety?.recordsInserted || 0);
     const totalUpdated = (results.mandi?.recordsUpdated || 0) + (results.variety?.recordsUpdated || 0);
     console.log(`[PriceDataScheduler] Combined fetch: ${totalInserted} total new, ${totalUpdated} total updated`);
+
+    // STAGE 2: Clean + standardize new records
+    if (totalInserted > 0 || totalUpdated > 0) {
+      await this._executeClean();
+
+      // STAGE 3: Compute time-series features
+      await this._executeFeatureEngineering();
+    } else {
+      console.log('[PriceDataScheduler] No new records — skipping cleaning + feature computation');
+    }
+  }
+
+  /**
+   * Execute data cleaning on newly ingested records.
+   * @private
+   */
+  async _executeClean() {
+    console.log('[PriceDataScheduler] Starting cleaning stage...');
+    this.lastCleanTime = new Date();
+    try {
+      const result = await CleanedPriceService.processNewRecords();
+      console.log(`[PriceDataScheduler] Cleaning done: ${result.cleaned} records, ${result.outliersFlagged} outliers flagged, ${result.gapsFilled} gaps filled`);
+    } catch (err) {
+      console.error('[PriceDataScheduler] Cleaning error:', err.message);
+    }
+  }
+
+  /**
+   * Execute feature engineering on cleaned records.
+   * Triggers model retraining if data volume increased by > 10% or 7 days elapsed.
+   * @private
+   */
+  async _executeFeatureEngineering() {
+    console.log('[PriceDataScheduler] Starting feature engineering stage...');
+    this.lastFeatureTime = new Date();
+    try {
+      const result = await FeatureEngineeringService.computeFeatures();
+      console.log(`[PriceDataScheduler] Feature engineering done: ${result.featuresComputed} feature rows across ${result.pairs} commodity+mandi pairs`);
+
+      // Check if retraining is needed
+      const newCount = result.featuresComputed;
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000);
+      const dataGrowthPct = this.lastTrainDataPointCount > 0
+        ? ((newCount - this.lastTrainDataPointCount) / this.lastTrainDataPointCount) * 100
+        : 100;
+
+      const shouldRetrain = dataGrowthPct >= 10 || !this.lastFeatureTime || this.lastFeatureTime < sevenDaysAgo;
+
+      if (shouldRetrain) {
+        console.log(`[PriceDataScheduler] Retrain triggered (data growth: ${dataGrowthPct.toFixed(1)}%). Models will be retrained on next getInsight() call.`);
+        this.lastTrainDataPointCount = newCount;
+      }
+    } catch (err) {
+      console.error('[PriceDataScheduler] Feature engineering error:', err.message);
+    }
   }
 
   /**
@@ -336,7 +399,16 @@ class PriceDataScheduler {
       lastFetchTime: this.lastFetchTime,
       lastPruneTime: this.lastPruneTime,
       lastForecastTime: this.lastForecastTime,
-      apiKeyConfigured: !!process.env.DATA_GOV_API_KEY
+      lastCleanTime: this.lastCleanTime,
+      lastFeatureTime: this.lastFeatureTime,
+      apiKeyConfigured: !!process.env.DATA_GOV_API_KEY,
+      pipeline: [
+        'ingest (MandiPriceService + VarietyPriceService)',
+        'clean (CleanedPriceService)',
+        'feature_engineering (FeatureEngineeringService)',
+        'prune (DataPruningService)',
+        'demand_forecast (DemandForecastService)'
+      ]
     };
   }
 }

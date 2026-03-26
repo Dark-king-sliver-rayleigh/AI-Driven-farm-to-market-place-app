@@ -115,6 +115,7 @@ export function CategoryInsightsPage() {
                 dataFreshness={item.dataFreshness}
                 msp={item.msp}
                 latestPriceDate={item.latestPriceDate}
+                unit={item.unit}
               />
             ))}
           </div>

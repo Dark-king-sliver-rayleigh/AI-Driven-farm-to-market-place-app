@@ -230,13 +230,13 @@ async function main() {
     console.log('\n📋 Sample Market Data:');
     const sampleMarket = await MarketPrice.find().limit(3);
     sampleMarket.forEach(r => {
-      console.log(`  - ${r.commodity} @ ${r.mandi}: ₹${r.modalPrice}/quintal`);
+      console.log(`  - ${r.commodity} @ ${r.mandi}: ₹${r.modalPrice}/${(r.unit || 'Rs./Quintal').replace(/^Rs\.\//, '').toLowerCase()}`);
     });
     
     console.log('\n📋 Sample MSP Data:');
     const sampleMSP = await MSPPrice.find().limit(3);
     sampleMSP.forEach(r => {
-      console.log(`  - ${r.commodity}: ₹${r.msp}/quintal (${r.season})`);
+      console.log(`  - ${r.commodity}: ₹${r.msp}/quintal (${r.season})`);  // MSP is always per quintal
     });
     
     console.log('\n✅ Data loading complete!');

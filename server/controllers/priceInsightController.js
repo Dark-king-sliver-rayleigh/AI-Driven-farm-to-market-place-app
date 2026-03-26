@@ -212,7 +212,7 @@ const getCommoditiesByCategory = async (req, res) => {
         return {
           commodity,
           mandi,
-          hasData: insight.suggestedPrice !== null,
+          hasData: insight.suggestedPrice !== null && insight.suggestedPrice > 0,
           ...insight
         };
       } catch {

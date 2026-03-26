@@ -1,8 +1,49 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAvailableProducts, useConsumerOrders, useNotifications } from '../../hooks/useData';
 import { orderAPI } from '../../services/api';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default marker icons in React Leaflet
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
+
+/** Reverse geocode lat/lng via Nominatim (free, no API key) */
+async function reverseGeocode(lat, lng) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
+      { headers: { 'Accept-Language': 'en' } }
+    );
+    const data = await res.json();
+    const a = data.address || {};
+    return {
+      address: [a.road, a.neighbourhood, a.suburb, a.hamlet, a.village].filter(Boolean).join(', ') || data.display_name?.split(',').slice(0, 3).join(',') || '',
+      city: a.city || a.town || a.county || a.state_district || '',
+      state: a.state || '',
+      pincode: a.postcode || '',
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Leaflet child component that captures map clicks */
+function MapClickHandler({ onLocationSelect }) {
+  useMapEvents({
+    click(e) {
+      onLocationSelect(e.latlng);
+    },
+  });
+  return null;
+}
 
 // Category definitions for filtering
 const CATEGORIES = [
@@ -65,7 +106,70 @@ export function ConsumerHomeIntegrated() {
     city: '',
     state: '',
     pincode: '',
+    coordinates: null, // { lat, lng }
   });
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [mapMarker, setMapMarker] = useState(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState(null);
+
+  // Handle "Current Location" click
+  const handleCurrentLocation = useCallback(async () => {
+    if (!navigator.geolocation) {
+      setGeoError('Geolocation is not supported by your browser.');
+      return;
+    }
+    setGeoLoading(true);
+    setGeoError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        const geo = await reverseGeocode(latitude, longitude);
+        if (geo) {
+          setDeliveryLocation(prev => ({
+            ...prev,
+            address: geo.address || prev.address,
+            city: geo.city || prev.city,
+            state: geo.state || prev.state,
+            pincode: geo.pincode || prev.pincode,
+            coordinates: { lat: latitude, lng: longitude },
+          }));
+          setMapMarker({ lat: latitude, lng: longitude });
+        } else {
+          setDeliveryLocation(prev => ({
+            ...prev,
+            coordinates: { lat: latitude, lng: longitude },
+          }));
+          setMapMarker({ lat: latitude, lng: longitude });
+          setGeoError('Got your location but could not resolve address. Please fill in remaining fields.');
+        }
+        setGeoLoading(false);
+      },
+      (err) => {
+        setGeoError(err.code === 1 ? 'Location permission denied. Please allow access.' : 'Could not get your location. Please try again.');
+        setGeoLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, []);
+
+  // Handle map click for pin placement
+  const handleMapLocationSelect = useCallback(async (latlng) => {
+    const { lat, lng } = latlng;
+    setMapMarker({ lat, lng });
+    setDeliveryLocation(prev => ({ ...prev, coordinates: { lat, lng } }));
+    const geo = await reverseGeocode(lat, lng);
+    if (geo) {
+      setDeliveryLocation(prev => ({
+        ...prev,
+        address: geo.address || prev.address,
+        city: geo.city || prev.city,
+        state: geo.state || prev.state,
+        pincode: geo.pincode || prev.pincode,
+        coordinates: { lat, lng },
+      }));
+    }
+  }, []);
 
   // Filter and sort products
   const filteredProducts = products
@@ -114,13 +218,16 @@ export function ConsumerHomeIntegrated() {
           city: deliveryLocation.city.trim(),
           state: deliveryLocation.state.trim(),
           pincode: deliveryLocation.pincode.trim(),
+          ...(deliveryLocation.coordinates ? { coordinates: deliveryLocation.coordinates } : {}),
         }
       });
 
       setOrderSuccess(`Order placed for ${orderQuantity} ${selectedProduct.unit} of ${selectedProduct.name}!`);
       setSelectedProduct(null);
       setOrderQuantity(1);
-      setDeliveryLocation({ address: '', city: '', state: '', pincode: '' });
+      setDeliveryLocation({ address: '', city: '', state: '', pincode: '', coordinates: null });
+      setMapMarker(null);
+      setShowMapPicker(false);
       refetch();
       refetchOrders();
 
@@ -401,7 +508,7 @@ export function ConsumerHomeIntegrated() {
       {/* Order Modal */}
       {selectedProduct && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-xl font-bold text-gray-900 mb-4">Place Order</h3>
             
             {/* Order Error */}
@@ -443,7 +550,24 @@ export function ConsumerHomeIntegrated() {
               <p className="text-xs text-gray-500 mb-3">Where should this product be delivered?</p>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Address / Landmark *</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-medium text-gray-600">Address / Landmark *</label>
+                    <button
+                      type="button"
+                      onClick={handleCurrentLocation}
+                      disabled={geoLoading}
+                      className="flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 px-2.5 py-1 rounded-full transition-colors disabled:opacity-50 disabled:cursor-wait"
+                    >
+                      {geoLoading ? (
+                        <><span className="inline-block w-3 h-3 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></span> Locating...</>
+                      ) : (
+                        <>📍 Current Location</>
+                      )}
+                    </button>
+                  </div>
+                  {geoError && (
+                    <p className="text-xs text-amber-600 mb-1">⚠️ {geoError}</p>
+                  )}
                   <textarea
                     value={deliveryLocation.address}
                     onChange={(e) => setDeliveryLocation(prev => ({ ...prev, address: e.target.value }))}
@@ -451,6 +575,34 @@ export function ConsumerHomeIntegrated() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none text-sm"
                     placeholder="e.g., Flat 201, Green Apartments, MG Road"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowMapPicker(prev => !prev)}
+                    className="mt-1.5 flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded-full transition-colors"
+                  >
+                    🗺️ {showMapPicker ? 'Hide Map' : 'Choose from Map'}
+                  </button>
+                  {showMapPicker && (
+                    <div className="mt-2 rounded-lg overflow-hidden border border-gray-300" style={{ height: '250px' }}>
+                      <MapContainer
+                        center={mapMarker ? [mapMarker.lat, mapMarker.lng] : [20.5937, 78.9629]}
+                        zoom={mapMarker ? 15 : 5}
+                        style={{ height: '100%', width: '100%' }}
+                        className="z-0"
+                      >
+                        <TileLayer
+                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <MapClickHandler onLocationSelect={handleMapLocationSelect} />
+                        {mapMarker && <Marker position={[mapMarker.lat, mapMarker.lng]} />}
+                      </MapContainer>
+                      <p className="text-[10px] text-gray-400 text-center py-1 bg-gray-50">Click on the map to select delivery location</p>
+                    </div>
+                  )}
+                  {deliveryLocation.coordinates && (
+                    <p className="text-[10px] text-green-600 mt-1">📌 Coordinates: {deliveryLocation.coordinates.lat.toFixed(5)}, {deliveryLocation.coordinates.lng.toFixed(5)}</p>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -512,7 +664,9 @@ export function ConsumerHomeIntegrated() {
                 onClick={() => {
                   setSelectedProduct(null);
                   setOrderQuantity(1);
-                  setDeliveryLocation({ address: '', city: '', state: '', pincode: '' });
+                  setDeliveryLocation({ address: '', city: '', state: '', pincode: '', coordinates: null });
+                  setMapMarker(null);
+                  setShowMapPicker(false);
                   setOrderError(null);
                 }}
                 disabled={ordering}

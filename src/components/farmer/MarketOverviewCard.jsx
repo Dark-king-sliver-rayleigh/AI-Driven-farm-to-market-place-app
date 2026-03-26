@@ -33,8 +33,11 @@ function MarketOverviewCardComponent({
   sources = {},
   dataFreshness = {},
   msp = null,
-  latestPriceDate
+  latestPriceDate,
+  unit = 'Rs./Quintal'
 }) {
+  // Extract short display label from unit (e.g. 'Rs./Quintal' → 'quintal', 'Rs./Each' → 'each')
+  const unitLabel = unit ? unit.replace(/^Rs\.\//, '').toLowerCase() : 'quintal';
   // Trend indicator config
   const trendConfig = {
     RISING: { icon: '↑', color: 'text-green-600', bg: 'bg-green-100', label: 'Rising' },
@@ -99,11 +102,11 @@ function MarketOverviewCardComponent({
       <div className="mb-3">
         <div className="text-3xl font-bold text-gray-900">
           ₹{suggestedPrice?.toLocaleString('en-IN') || '--'}
-          <span className="text-sm font-normal text-gray-500">/quintal</span>
+          <span className="text-sm font-normal text-gray-500">/{unitLabel}</span>
         </div>
         {msp && (
           <div className="text-xs text-green-600 mt-1">
-            MSP: ₹{msp.toLocaleString('en-IN')}/quintal
+            MSP: ₹{msp.toLocaleString('en-IN')}/{unitLabel}
           </div>
         )}
       </div>
@@ -139,7 +142,7 @@ function MarketOverviewCardComponent({
       {/* Arrivals */}
       {avgArrivals > 0 && (
         <div className="text-xs text-gray-500 mb-3">
-          📦 Avg. Arrivals: <span className="font-medium text-gray-700">{avgArrivals.toLocaleString('en-IN')} quintals</span>
+          📦 Avg. Arrivals: <span className="font-medium text-gray-700">{avgArrivals.toLocaleString('en-IN')}</span>
         </div>
       )}
 

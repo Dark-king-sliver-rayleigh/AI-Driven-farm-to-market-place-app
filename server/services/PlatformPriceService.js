@@ -187,19 +187,29 @@ class PlatformPriceService {
       mandiMax = Math.max(...mandiPrices.map(p => p.maxPrice));
     }
 
-    // Convert mandi prices from Rs/Quintal to same unit as platform (e.g. Rs/kg)
-    // 1 Quintal = 100 kg
+    // Read the actual stored unit from the latest MarketPrice record
+    const latestMandiRecord = mandiPrices.length > 0 ? mandiPrices[0] : null;
+    const mandiRawUnit = latestMandiRecord?.unit || 'Rs./Quintal';
+    const mandiUnitShort = mandiRawUnit.replace(/^Rs\.\//, '').toLowerCase(); // e.g. 'quintal', 'kg', 'each'
+
+    // Convert mandi prices to same unit as platform only if units differ
     const platformUnit = platformData.unit || 'kg';
     let mandiAvgConverted = mandiAvgPrice;
     let mandiMinConverted = mandiMin;
     let mandiMaxConverted = mandiMax;
-    let mandiDisplayUnit = 'Rs./Quintal';
+    let mandiDisplayUnit = mandiRawUnit;
+    let conversionNote = '';
 
-    if (mandiAvgPrice !== null && platformUnit === 'kg') {
+    // Only convert if mandi is per quintal and platform is per kg
+    if (mandiAvgPrice !== null && mandiUnitShort === 'quintal' && platformUnit === 'kg') {
       mandiAvgConverted = Math.round((mandiAvgPrice / 100) * 100) / 100;
       mandiMinConverted = mandiMin !== null ? Math.round((mandiMin / 100) * 100) / 100 : null;
       mandiMaxConverted = mandiMax !== null ? Math.round((mandiMax / 100) * 100) / 100 : null;
-      mandiDisplayUnit = `Rs./${platformUnit} (converted from Rs./Quintal)`;
+      mandiDisplayUnit = `Rs./${platformUnit} (converted from ${mandiRawUnit})`;
+      conversionNote = `Mandi price converted from ${mandiRawUnit} to Rs./${platformUnit}`;
+    } else if (mandiUnitShort !== platformUnit.toLowerCase()) {
+      // Units differ but no known conversion — flag it
+      conversionNote = `Warning: mandi unit (${mandiRawUnit}) differs from platform unit (${platformUnit}). No automatic conversion applied.`;
     }
 
     // Calculate spread using same-unit prices
@@ -207,7 +217,10 @@ class PlatformPriceService {
     let spread = null;
     let spreadPct = null;
 
-    if (platformPrice && mandiAvgConverted) {
+    // Only compare if units match (after conversion)
+    const unitsMatch = mandiUnitShort === platformUnit.toLowerCase() ||
+      (mandiUnitShort === 'quintal' && platformUnit === 'kg'); // we converted above
+    if (platformPrice && mandiAvgConverted && unitsMatch) {
       spread = Math.round((platformPrice - mandiAvgConverted) * 100) / 100;
       spreadPct = Math.round((spread / mandiAvgConverted) * 100 * 100) / 100;
     }
@@ -231,7 +244,7 @@ class PlatformPriceService {
         maxPrice: mandiMaxConverted,
         dataPoints: mandiDataPoints,
         unit: mandiDisplayUnit,
-        rawUnit: 'Rs./Quintal',
+        rawUnit: mandiRawUnit,
         rawAverageModalPrice: mandiAvgPrice
       },
       comparison: {

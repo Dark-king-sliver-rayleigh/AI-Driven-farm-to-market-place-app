@@ -199,6 +199,10 @@ class VarietyPriceService {
         return null;
       }
 
+      // Capture actual unit of measurement from API
+      const rawUnit = rawRecord.commodity_uom || rawRecord.Commodity_Uom || rawRecord.unit || rawRecord.Unit || '';
+      const unit = this._normalizeUnit(rawUnit);
+
       return {
         commodity: commodity.trim(),
         state: state.trim() || 'Unknown',
@@ -209,7 +213,7 @@ class VarietyPriceService {
         minPrice: minPrice,
         maxPrice: maxPrice,
         modalPrice: modalPrice,
-        unit: 'Rs./Quintal',
+        unit: unit,
         arrivals: this._parseFloat(rawRecord.arrivals || rawRecord.Arrivals) || 0,
         fetchedAt: new Date(),
         source: this.sourceTag
@@ -244,6 +248,31 @@ class VarietyPriceService {
     if (!value) return 0;
     const parsed = parseFloat(value);
     return isNaN(parsed) ? 0 : parsed;
+  }
+
+  /**
+   * Normalize unit of measurement from the API to a display-friendly format.
+   * @param {string} rawUnit - Raw unit string from API
+   * @returns {string} Normalized unit string
+   */
+  _normalizeUnit(rawUnit) {
+    if (!rawUnit || typeof rawUnit !== 'string') return 'Rs./Quintal';
+    const unit = rawUnit.trim().toLowerCase();
+    const unitMap = {
+      'quintal': 'Rs./Quintal', 'kg': 'Rs./Kg', 'kilogram': 'Rs./Kg',
+      'each': 'Rs./Each', 'nos': 'Rs./Each', 'number': 'Rs./Each', 'piece': 'Rs./Each',
+      'dozen': 'Rs./Dozen', 'litre': 'Rs./Litre', 'liter': 'Rs./Litre',
+      'gram': 'Rs./Gram', 'ton': 'Rs./Ton', 'tonne': 'Rs./Tonne',
+      '100 nos': 'Rs./100 Nos', '100 nos.': 'Rs./100 Nos', '100nos': 'Rs./100 Nos',
+      '1000 nos': 'Rs./1000 Nos', '1000 nos.': 'Rs./1000 Nos',
+      'packet': 'Rs./Packet', 'bundle': 'Rs./Bundle', 'box': 'Rs./Box',
+    };
+    if (unitMap[unit]) return unitMap[unit];
+    for (const [key, val] of Object.entries(unitMap)) {
+      if (unit.includes(key)) return val;
+    }
+    if (rawUnit.startsWith('Rs.')) return rawUnit;
+    return `Rs./${rawUnit.charAt(0).toUpperCase() + rawUnit.slice(1)}`;
   }
 
   /**

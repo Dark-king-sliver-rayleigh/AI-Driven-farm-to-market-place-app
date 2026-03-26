@@ -181,6 +181,11 @@ class MandiPriceService {
         return null;
       }
 
+      // Capture the actual unit of measurement from the API
+      // data.gov.in typically uses 'commodity_uom' or 'Commodity_Uom'
+      const rawUnit = rawRecord.commodity_uom || rawRecord.Commodity_Uom || rawRecord.unit || rawRecord.Unit || '';
+      const unit = this._normalizeUnit(rawUnit);
+
       return {
         commodity: commodity.trim(),
         state: state.trim() || 'Unknown',
@@ -191,7 +196,7 @@ class MandiPriceService {
         minPrice: minPrice,
         maxPrice: maxPrice,
         modalPrice: modalPrice,
-        unit: 'Rs./Quintal',
+        unit: unit,
         arrivals: this._parseFloat(rawRecord.arrivals || rawRecord.Arrivals) || 0,
         fetchedAt: new Date(),
         source: 'data.gov.in'
@@ -226,6 +231,59 @@ class MandiPriceService {
     if (!value) return 0;
     const parsed = parseFloat(value);
     return isNaN(parsed) ? 0 : parsed;
+  }
+
+  /**
+   * Normalize the unit of measurement from the API to a display-friendly format.
+   * The government API returns various formats like "Quintal", "Each", "Dozen", etc.
+   * 
+   * @param {string} rawUnit - Raw unit string from API
+   * @returns {string} Normalized unit string (e.g., "Rs./Quintal", "Rs./Each", "Rs./Dozen")
+   */
+  _normalizeUnit(rawUnit) {
+    if (!rawUnit || typeof rawUnit !== 'string') return 'Rs./Quintal';
+
+    const unit = rawUnit.trim().toLowerCase();
+
+    // Map known API unit values to display-friendly labels
+    const unitMap = {
+      'quintal':     'Rs./Quintal',
+      'kg':          'Rs./Kg',
+      'kilogram':    'Rs./Kg',
+      'each':        'Rs./Each',
+      'nos':         'Rs./Each',
+      'number':      'Rs./Each',
+      'piece':       'Rs./Each',
+      'dozen':       'Rs./Dozen',
+      'litre':       'Rs./Litre',
+      'liter':       'Rs./Litre',
+      'gram':        'Rs./Gram',
+      'ton':         'Rs./Ton',
+      'tonne':       'Rs./Tonne',
+      '100 nos':     'Rs./100 Nos',
+      '100 nos.':    'Rs./100 Nos',
+      '100nos':      'Rs./100 Nos',
+      '1000 nos':    'Rs./1000 Nos',
+      '1000 nos.':   'Rs./1000 Nos',
+      'packet':      'Rs./Packet',
+      'bundle':      'Rs./Bundle',
+      'box':         'Rs./Box',
+    };
+
+    // Exact match first
+    if (unitMap[unit]) return unitMap[unit];
+
+    // Partial match (e.g., "100 nos" inside "per 100 nos")
+    for (const [key, val] of Object.entries(unitMap)) {
+      if (unit.includes(key)) return val;
+    }
+
+    // If it already has "Rs./" prefix, return as-is (title-cased)
+    if (rawUnit.startsWith('Rs.')) return rawUnit;
+
+    // Fallback: prepend Rs./ and capitalize
+    const capitalized = rawUnit.charAt(0).toUpperCase() + rawUnit.slice(1);
+    return `Rs./${capitalized}`;
   }
 
   /**

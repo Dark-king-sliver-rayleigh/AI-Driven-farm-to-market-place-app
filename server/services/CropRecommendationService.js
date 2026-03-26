@@ -110,7 +110,7 @@ LIVE MARKET DATA FROM OUR PLATFORM:
 ${marketContext.summary}
 
 TOP PRICED COMMODITIES CURRENTLY:
-${marketContext.topPriced.map(c => `- ${c.commodity}: ₹${c.avgPrice}/quintal (trend: ${c.trend})`).join('\n')}
+${marketContext.topPriced.map(c => `- ${c.commodity}: ₹${c.avgPrice}/${c.unit || 'quintal'} (trend: ${c.trend})`).join('\n')}
 
 DEMAND FORECAST HIGHLIGHTS:
 ${marketContext.demandHighlights.join('\n')}
@@ -185,7 +185,7 @@ Sort by suitabilityScore descending. Return ONLY the JSON array, no other text.`
         demandTrend: marketData?.trend || 'STABLE',
         suitabilityScore: score,
         reason: marketData 
-          ? `Current market price is ₹${marketData.avgPrice}/quintal. ${marketData.trend === 'RISING' ? 'Prices are trending upward.' : 'Market is stable.'} Suitable for ${season} season.`
+          ? `Current market price is ₹${marketData.avgPrice}/${marketData.unit || 'quintal'}. ${marketData.trend === 'RISING' ? 'Prices are trending upward.' : 'Market is stable.'} Suitable for ${season} season.`
           : `Traditionally grown in ${season} season in India. Market data will improve recommendations as more data is collected.`,
         estimatedYieldPerAcre: 'Varies by region',
         waterRequirement: 'MEDIUM',
@@ -214,6 +214,7 @@ Sort by suitabilityScore descending. Return ONLY the JSON array, no other text.`
           avgPrice: { $avg: '$modalPrice' },
           minPrice: { $min: '$minPrice' },
           maxPrice: { $max: '$maxPrice' },
+          unit: { $first: '$unit' },
           dataPoints: { $sum: 1 },
           latestDate: { $max: '$date' }
         }
@@ -228,10 +229,12 @@ Sort by suitabilityScore descending. Return ONLY the JSON array, no other text.`
       : 0;
     
     for (const commodity of priceAgg) {
+      const unitLabel = (commodity.unit || 'Rs./Quintal').replace(/^Rs\.\//, '').toLowerCase();
       priceMap[commodity._id.toLowerCase()] = {
         avgPrice: Math.round(commodity.avgPrice),
         minPrice: Math.round(commodity.minPrice),
         maxPrice: Math.round(commodity.maxPrice),
+        unit: unitLabel,
         trend: commodity.avgPrice > overallAvg * 1.1 ? 'RISING' : 
                commodity.avgPrice < overallAvg * 0.9 ? 'FALLING' : 'STABLE',
         overallAvg: Math.round(overallAvg)
@@ -242,6 +245,7 @@ Sort by suitabilityScore descending. Return ONLY the JSON array, no other text.`
     const topPriced = priceAgg.slice(0, 5).map(c => ({
       commodity: c._id,
       avgPrice: Math.round(c.avgPrice),
+      unit: (c.unit || 'Rs./Quintal').replace(/^Rs\.\//, '').toLowerCase(),
       trend: priceMap[c._id.toLowerCase()]?.trend || 'STABLE'
     }));
     
@@ -264,7 +268,7 @@ Sort by suitabilityScore descending. Return ONLY the JSON array, no other text.`
     }
     
     const summary = priceAgg.length > 0
-      ? `We have market price data for ${priceAgg.length} commodities. Average price across all commodities: ₹${Math.round(overallAvg)}/quintal.`
+      ? `We have market price data for ${priceAgg.length} commodities. Prices are reported in their respective units (per quintal, per kg, per piece, etc.).`
       : 'Limited market data available on the platform currently.';
     
     return { priceMap, topPriced, demandHighlights, summary };
