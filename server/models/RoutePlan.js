@@ -15,7 +15,7 @@ const mongoose = require('mongoose');
 
 // Valid route plan status transitions
 const ROUTE_STATUS_TRANSITIONS = {
-  'DRAFT':       ['ASSIGNED', 'CANCELLED'],
+  'DRAFT':       ['ASSIGNED', 'IN_PROGRESS', 'CANCELLED'],
   'ASSIGNED':    ['IN_PROGRESS', 'CANCELLED'],
   'IN_PROGRESS': ['COMPLETED', 'CANCELLED'],
   'COMPLETED':   [],

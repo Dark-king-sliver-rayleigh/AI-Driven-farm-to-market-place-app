@@ -1,4 +1,4 @@
-﻿import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
 // Import integrated pages (API-connected)
@@ -41,50 +41,83 @@ import AIChatWidget from './components/AIChatWidget'
  * Navigation component for Farmer
  */
 function FarmerNavigation() {
-  const location = useLocation()
   const { logout } = useAuth()
-
-  const navItems = [
-    { path: '/farmer/home', label: '\u{1F3E0} Home' },
-    { path: '/farmer/dashboard', label: '\u{1F4E6} Inventory' },
-    { path: '/farmer/add-product', label: '\u2795 Add' },
-    { path: '/farmer/prices', label: '\u{1F4B0} Prices' },
-    { path: '/farmer/forecast', label: '\u{1F4C8} Forecast' },
-    { path: '/farmer/settings', label: '\u2699\uFE0F Settings' },
-  ]
-
+  
   return (
-    <nav className="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-md border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center">
-                <span className="text-white font-bold text-lg">A</span>
-              </div>
-              <Link to="/farmer/home" className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-700 to-green-500">
-                AgroDirect
-              </Link>
+    <>
+      {/* SideNavBar - completely replaces the top navigation for farmers */}
+      <aside className="hidden md:flex fixed left-0 top-0 h-screen w-20 hover:w-64 transition-all duration-500 rounded-r-3xl bg-emerald-950/40 backdrop-blur-3xl shadow-[40px_0_80px_rgba(0,0,0,0.2)] bg-gradient-to-r from-emerald-900/10 to-transparent z-50 overflow-hidden group">
+        <div className="flex flex-col items-center py-8 space-y-4 h-full w-full">
+          <div className="flex flex-col items-center space-y-2 px-4 w-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400">
+              <span className="material-symbols-outlined">science</span>
             </div>
-            <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200 ${
-                    location.pathname === item.path
-                      ? 'border-green-500 text-green-700'
-                      : 'border-transparent text-gray-500 hover:text-green-600 hover:border-green-300'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
+            <div className="text-center">
+              <p className="text-sm font-semibold font-sans text-emerald-100 whitespace-nowrap">Laboratory Alpha</p>
+              <p className="text-[10px] font-mono text-emerald-400 whitespace-nowrap">Node 01</p>
             </div>
           </div>
+          
+          <nav className="flex flex-col w-full space-y-1 mt-4 flex-1">
+            <Link to="/farmer/home" className="flex items-center px-6 py-4 text-emerald-100/60 hover:bg-emerald-500/10 hover:text-emerald-100 transition-all group/item">
+              <span className="material-symbols-outlined text-2xl">home</span>
+              <span className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm font-medium">Home</span>
+            </Link>
+            <Link to="/farmer/add-product" className="flex items-center px-6 py-4 text-emerald-100/60 hover:bg-emerald-500/10 hover:text-emerald-100 transition-all group/item">
+              <span className="material-symbols-outlined text-2xl">add_circle</span>
+              <span className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm font-medium">Add Product</span>
+            </Link>
+            <Link to="/farmer/dashboard" className="flex items-center px-6 py-4 text-emerald-100/60 hover:bg-emerald-500/10 hover:text-emerald-100 transition-all group/item">
+              <span className="material-symbols-outlined text-2xl">inventory_2</span>
+              <span className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm font-medium">Inventory</span>
+            </Link>
+            <Link to="/farmer/dashboard" className="flex items-center px-6 py-4 text-emerald-100/60 hover:bg-emerald-500/10 hover:text-emerald-100 transition-all group/item">
+              <span className="material-symbols-outlined text-2xl">shopping_cart</span>
+              <span className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm font-medium">Orders</span>
+            </Link>
+            <Link to="/farmer/prices" className="flex items-center px-6 py-4 text-emerald-100/60 hover:bg-emerald-500/10 hover:text-emerald-100 transition-all group/item">
+              <span className="material-symbols-outlined text-2xl">monitoring</span>
+              <span className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm font-medium">Prices</span>
+            </Link>
+            <Link to="/farmer/forecast" className="flex items-center px-6 py-4 text-emerald-100/60 hover:bg-emerald-500/10 hover:text-emerald-100 transition-all group/item">
+              <span className="material-symbols-outlined text-2xl">query_stats</span>
+              <span className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm font-medium">Forecast</span>
+            </Link>
+            <Link to="/farmer/settings" className="flex items-center px-6 py-4 text-emerald-100/60 hover:bg-emerald-500/10 hover:text-emerald-100 transition-all group/item">
+              <span className="material-symbols-outlined text-2xl">settings</span>
+              <span className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap text-sm font-medium">Settings</span>
+            </Link>
+          </nav>
+          
+          <div className="mt-auto px-4 w-full opacity-0 group-hover:opacity-100 transition-opacity pb-6">
+            <button onClick={logout} className="w-full bg-red-950/40 text-red-400 border border-red-900/50 hover:bg-red-900/40 py-3 rounded-xl font-bold shadow-lg hover:scale-105 transition-transform active:scale-95">
+              Logout
+            </button>
+          </div>
         </div>
-      </div>
-    </nav>
+      </aside>
+
+      {/* Bottom Navigation (Mobile Only) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-emerald-950/90 backdrop-blur-3xl flex items-center justify-around px-2 z-50 rounded-t-[2rem] border-t border-emerald-900/30">
+        <Link to="/farmer/home" className="text-emerald-400 flex flex-col items-center gap-1 hover:text-emerald-300">
+          <span className="material-symbols-outlined text-2xl">home</span>
+        </Link>
+        <Link to="/farmer/dashboard" className="text-emerald-100/50 flex flex-col items-center gap-1 hover:text-emerald-100">
+          <span className="material-symbols-outlined text-2xl">inventory_2</span>
+        </Link>
+        <div className="relative -top-6">
+          <Link to="/farmer/add-product" className="w-14 h-14 bg-green-500 text-white rounded-full shadow-lg shadow-green-500/40 flex items-center justify-center hover:scale-105 transition-transform">
+            <span className="material-symbols-outlined text-3xl">add</span>
+          </Link>
+        </div>
+        <Link to="/farmer/prices" className="text-emerald-100/50 flex flex-col items-center gap-1 hover:text-emerald-100">
+          <span className="material-symbols-outlined text-2xl">monitoring</span>
+        </Link>
+        <Link to="/farmer/forecast" className="text-emerald-100/50 flex flex-col items-center gap-1 hover:text-emerald-100">
+          <span className="material-symbols-outlined text-2xl">query_stats</span>
+        </Link>
+      </nav>
+    </>
   )
 }
 
@@ -225,7 +258,8 @@ function RoleBasedRedirect() {
  * Main App component with routing
  */
 function AppContent() {
-  const { isAuthenticated, loading } = useAuth()
+  const { isAuthenticated, loading, user } = useAuth()
+  const isFarmer = user?.role?.toUpperCase() === 'FARMER'
 
   // Show loading while checking auth
   if (loading) {
@@ -258,7 +292,7 @@ function AppContent() {
       <Navigation />
       <AIChatWidget />
       
-      <main>
+      <main className={isFarmer ? 'md:pl-20 pb-20 md:pb-0' : ''}>
         <Routes>
           <Route path="/" element={<RoleBasedRedirect />} />
           

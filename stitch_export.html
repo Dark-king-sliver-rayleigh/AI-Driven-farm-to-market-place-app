@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AgroDirect | The Living Laboratory</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Space+Grotesk:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "secondary-fixed": "#c1d1ff",
+              "surface-container-low": "#0f1511",
+              "tertiary-dim": "#ed8200",
+              "on-secondary-fixed-variant": "#004bb0",
+              "secondary-fixed-dim": "#acc3ff",
+              "surface-bright": "#262e29",
+              "primary": "#86fea7",
+              "on-tertiary-fixed": "#291200",
+              "on-tertiary-container": "#442100",
+              "on-error": "#490006",
+              "on-secondary": "#001d4e",
+              "surface-dim": "#0a0f0c",
+              "primary-container": "#3bb668",
+              "inverse-surface": "#f6fbf5",
+              "surface-variant": "#202723",
+              "on-primary-fixed-variant": "#006c35",
+              "surface-container-high": "#1a211d",
+              "primary-fixed-dim": "#78ef9a",
+              "on-primary-fixed": "#004c23",
+              "on-error-container": "#ffa8a3",
+              "secondary": "#6f9bff",
+              "on-tertiary": "#532a00",
+              "inverse-on-surface": "#515652",
+              "on-background": "#f9fdf8",
+              "background": "#0a0f0c",
+              "surface-container": "#151b17",
+              "on-secondary-container": "#ecefff",
+              "on-primary-container": "#002910",
+              "error-dim": "#d7383b",
+              "inverse-primary": "#006e36",
+              "surface-container-highest": "#202723",
+              "error": "#ff716c",
+              "on-secondary-fixed": "#003077",
+              "on-primary": "#00612f",
+              "outline-variant": "#444945",
+              "outline": "#717772",
+              "on-tertiary-fixed-variant": "#5a2e00",
+              "secondary-container": "#1354bc",
+              "tertiary-container": "#fd8b00",
+              "primary-dim": "#78ef9a",
+              "primary-fixed": "#86fea7",
+              "surface-tint": "#86fea7",
+              "tertiary-fixed-dim": "#f58600",
+              "on-surface": "#f9fdf8",
+              "surface": "#0a0f0c",
+              "error-container": "#9f0519",
+              "on-surface-variant": "#a7aca7",
+              "tertiary": "#ff9f4a",
+              "surface-container-lowest": "#000000",
+              "secondary-dim": "#6f9bff",
+              "tertiary-fixed": "#ff9734"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Manrope"],
+              "label": ["Space Grotesk"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(15, 21, 17, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+        .hud-glow-tl {
+            background: radial-gradient(circle at top left, rgba(134, 254, 167, 0.1), transparent 40%);
+        }
+        .hud-glow-br {
+            background: radial-gradient(circle at bottom right, rgba(111, 155, 255, 0.1), transparent 40%);
+        }
+        .tonal-transition-emerald-900\/20 {
+            background: linear-gradient(to bottom, rgba(6, 78, 59, 0.2), transparent);
+        }
+        .glow-emerald-500\/50:active {
+            box-shadow: 0 0 20px rgba(134, 254, 167, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-surface-dim text-on-surface font-body selection:bg-primary selection:text-on-primary-container min-h-screen overflow-x-hidden">
+<!-- Environmental Overlay (HUD) -->
+<div class="fixed inset-0 pointer-events-none z-0">
+<div class="absolute inset-0 hud-glow-tl"></div>
+<div class="absolute inset-0 hud-glow-br"></div>
+<div class="absolute inset-0 opacity-20" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAHUetmVGaZBUvmveYZz9Ap8P0TvWQm0Qhhw9bTBQr1smFG9flHr8_4T2ELLos-sw4Xx28QYSQryBWMqjfC1yLiVEOcwiuzm2l5wbqE7f2LXeZklATJuXegGAU7SWhNh_nXp4jKcCG5xPTJdvooxhTVoe1gmllAR4fiNJJhy1jV7c4g08Cg98IMF8NUiXvyVW1ZRmjW4Fx_pdw6EAXIZWqT87-MwRe9TrcvLm88-qzZ2KvMkE_fw_zRq-YoyzbcOFSNxFQZ231PVTo');"></div>
+</div>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-emerald-950/60 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] tonal-transition-emerald-900/20">
+<div class="flex justify-between items-center px-10 py-4 w-full max-w-screen-2xl mx-auto">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-black tracking-tighter text-emerald-400 font-headline">AgroDirect</span>
+<nav class="hidden md:flex items-center space-x-8">
+<!-- Home is Active -->
+<a class="text-emerald-400 border-b-2 border-emerald-400 pb-1 font-bold font-label text-xs uppercase tracking-widest transition-all" href="#">Home</a>
+<a class="text-emerald-100/60 hover:text-white transition-colors font-label text-xs uppercase tracking-widest" href="#">Inventory</a>
+<a class="text-emerald-100/60 hover:text-white transition-colors font-label text-xs uppercase tracking-widest" href="#">Add</a>
+<a class="text-emerald-100/60 hover:text-white transition-colors font-label text-xs uppercase tracking-widest" href="#">Prices</a>
+<a class="text-emerald-100/60 hover:text-white transition-colors font-label text-xs uppercase tracking-widest" href="#">Forecast</a>
+<a class="text-emerald-100/60 hover:text-white transition-colors font-label text-xs uppercase tracking-widest" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center space-x-4">
+<button class="p-2 rounded-full hover:bg-emerald-800/30 hover:scale-105 transition-all duration-300 text-emerald-100/60 hover:text-white">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 rounded-full hover:bg-emerald-800/30 hover:scale-105 transition-all duration-300 text-emerald-100/60 hover:text-white">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</div>
+</header>
+<!-- SideNavBar (Hidden on Mobile) -->
+<aside class="fixed left-0 top-20 h-[calc(100vh-5rem)] w-20 hover:w-64 transition-all duration-500 rounded-r-3xl bg-emerald-950/40 backdrop-blur-3xl shadow-[40px_0_80px_rgba(0,0,0,0.2)] bg-gradient-to-r from-emerald-900/10 to-transparent z-40 overflow-hidden group">
+<div class="flex flex-col items-center py-8 space-y-8 h-full">
+<div class="flex flex-col items-center space-y-2 px-4 w-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<div class="w-10 h-10 rounded-full bg-primary-container/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">science</span>
+</div>
+<div class="text-center">
+<p class="text-sm font-semibold font-headline text-emerald-100 whitespace-nowrap">Laboratory Alpha</p>
+<p class="text-[10px] font-mono font-label text-emerald-400 whitespace-nowrap">Node 01</p>
+</div>
+</div>
+<nav class="flex flex-col w-full space-y-2">
+<a class="flex items-center px-6 py-4 text-emerald-100/40 hover:bg-emerald-500/10 hover:backdrop-blur-md transition-all group/item" href="#">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap font-label text-sm">Add Product</span>
+</a>
+<a class="flex items-center px-6 py-4 bg-emerald-400/20 text-emerald-400 border-r-4 border-emerald-400 transition-all group/item" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap font-label text-sm">Inventory</span>
+</a>
+<a class="flex items-center px-6 py-4 text-emerald-100/40 hover:bg-emerald-500/10 hover:backdrop-blur-md transition-all group/item" href="#">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap font-label text-sm">Orders</span>
+</a>
+<a class="flex items-center px-6 py-4 text-emerald-100/40 hover:bg-emerald-500/10 hover:backdrop-blur-md transition-all group/item" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap font-label text-sm">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-4 w-full opacity-0 group-hover:opacity-100 transition-opacity pb-8">
+<button class="w-full bg-primary text-on-primary py-3 rounded-xl font-bold font-headline shadow-lg shadow-primary/20 hover:scale-105 transition-transform active:scale-95">
+                    New Analysis
+                </button>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="pt-32 pl-24 pr-10 pb-20 max-w-screen-2xl mx-auto z-10 relative">
+<!-- Hero Section & 3D Action Buttons -->
+<section class="mb-20">
+<div class="flex flex-col md:flex-row justify-between items-end mb-12">
+<div class="max-w-2xl">
+<span class="text-tertiary font-label font-bold tracking-widest text-sm uppercase block mb-2">Ecosystem Overview</span>
+<h1 class="text-5xl font-black font-headline text-on-surface tracking-tight">The Living Laboratory</h1>
+<p class="text-on-surface-variant mt-4 text-lg">Real-time biometrics and market synchronization for your vertical farm nodes.</p>
+</div>
+<div class="hidden lg:block text-right">
+<p class="text-4xl font-bold font-headline text-primary">98.4%</p>
+<p class="text-xs font-label text-on-surface-variant uppercase tracking-widest">Yield Optimization</p>
+</div>
+</div>
+<!-- 3D Glassmorphic Action Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Add Product - Emerald -->
+<button class="group relative overflow-hidden glass-panel rounded-3xl p-8 border-t border-primary/20 shadow-2xl hover:scale-[1.02] transition-all duration-500 text-left">
+<div class="absolute -right-4 -bottom-4 w-32 h-32 bg-primary/10 blur-3xl group-hover:bg-primary/20 transition-all"></div>
+<div class="relative z-10">
+<div class="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center text-primary mb-6 group-hover:shadow-[0_0_20px_rgba(134,254,167,0.4)] transition-all">
+<span class="material-symbols-outlined text-3xl">add_box</span>
+</div>
+<h3 class="text-xl font-bold font-headline text-white mb-1">Add Product</h3>
+<p class="text-on-surface-variant text-sm font-label">Register new cultivation lot</p>
+</div>
+</button>
+<!-- Inventory - Sapphire -->
+<button class="group relative overflow-hidden glass-panel rounded-3xl p-8 border-t border-secondary/20 shadow-2xl hover:scale-[1.02] transition-all duration-500 text-left">
+<div class="absolute -right-4 -bottom-4 w-32 h-32 bg-secondary/10 blur-3xl group-hover:bg-secondary/20 transition-all"></div>
+<div class="relative z-10">
+<div class="w-14 h-14 rounded-2xl bg-secondary/20 flex items-center justify-center text-secondary mb-6 group-hover:shadow-[0_0_20px_rgba(111,155,255,0.4)] transition-all">
+<span class="material-symbols-outlined text-3xl">inventory</span>
+</div>
+<h3 class="text-xl font-bold font-headline text-white mb-1">Inventory</h3>
+<p class="text-on-surface-variant text-sm font-label">Real-time stock analytics</p>
+</div>
+</button>
+<!-- Orders - Sunrise -->
+<button class="group relative overflow-hidden glass-panel rounded-3xl p-8 border-t border-tertiary/20 shadow-2xl hover:scale-[1.02] transition-all duration-500 text-left">
+<div class="absolute -right-4 -bottom-4 w-32 h-32 bg-tertiary/10 blur-3xl group-hover:bg-tertiary/20 transition-all"></div>
+<div class="relative z-10">
+<div class="w-14 h-14 rounded-2xl bg-tertiary/20 flex items-center justify-center text-tertiary mb-6 group-hover:shadow-[0_0_20px_rgba(255,159,74,0.4)] transition-all">
+<span class="material-symbols-outlined text-3xl">shopping_bag</span>
+</div>
+<h3 class="text-xl font-bold font-headline text-white mb-1">Orders</h3>
+<p class="text-on-surface-variant text-sm font-label">Active trade fulfillment</p>
+</div>
+</button>
+<!-- Settings - Neutral -->
+<button class="group relative overflow-hidden glass-panel rounded-3xl p-8 border-t border-outline/20 shadow-2xl hover:scale-[1.02] transition-all duration-500 text-left">
+<div class="absolute -right-4 -bottom-4 w-32 h-32 bg-outline/10 blur-3xl group-hover:bg-outline/20 transition-all"></div>
+<div class="relative z-10">
+<div class="w-14 h-14 rounded-2xl bg-surface-container-highest flex items-center justify-center text-on-surface mb-6 group-hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-all">
+<span class="material-symbols-outlined text-3xl">tune</span>
+</div>
+<h3 class="text-xl font-bold font-headline text-white mb-1">Settings</h3>
+<p class="text-on-surface-variant text-sm font-label">System calibration &amp; nodes</p>
+</div>
+</button>
+</div>
+</section>
+<!-- Market Insights Section -->
+<section>
+<div class="flex items-center justify-between mb-10">
+<h2 class="text-3xl font-bold font-headline text-white tracking-tight">Market Insights</h2>
+<div class="flex gap-2">
+<span class="px-4 py-1.5 rounded-full bg-surface-container-high border border-outline-variant/30 text-xs font-label text-on-surface-variant">Live Data</span>
+<span class="px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-label text-primary">Global Indices</span>
+</div>
+</div>
+<!-- Bento Grid of Market Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<!-- Vegetables Card -->
+<div class="group relative glass-panel rounded-[2rem] p-8 overflow-visible h-80 flex flex-col justify-end border border-white/5 transition-all duration-500 hover:bg-emerald-900/10">
+<div class="absolute -top-12 -right-8 w-48 h-48 transition-transform duration-700 group-hover:scale-110 group-hover:-rotate-12 drop-shadow-[0_35px_35px_rgba(134,254,167,0.3)]">
+<img alt="Dewy head of lettuce" class="w-full h-full object-contain" data-alt="close-up hyper-realistic photorealistic head of lettuce with sparkling dew drops on vibrant green leaves floating against dark cinematic background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgiq_O3OTJ1CIE1ikGk56Da6vmM4HZHyfYFgxHKU9WFcLzgetPD4lGQ39O-ZGsMZMjkVb_gO8-ppmtnE_9FWAJEVSZFAFlzs3_MQYexzyT2NsaemQnUcZmD5Kj_nZVHp-LQIMLFTCuJ09eRBIdok0BIZh_pacmcDEccom4o9ZeeFaLjhmoqDyxi-LGYtqbSxJ6LdLMspqtI8Gcv0PjVAoo8jMgRP28GpsTPueq6RJpQYEYsVrqwWSN41uOrNGZsiPe-MBFDoAyrOM"/>
+</div>
+<div class="relative z-10">
+<span class="text-primary font-label text-xs font-bold uppercase tracking-widest mb-2 block">Vegetables</span>
+<h4 class="text-2xl font-bold font-headline text-white">Leafy Greens</h4>
+<div class="flex items-center gap-4 mt-4">
+<div class="bg-primary/20 px-3 py-1 rounded-md">
+<span class="text-primary font-label font-bold text-sm">+12.4%</span>
+</div>
+<span class="text-on-surface-variant text-xs font-label">Demand Spike</span>
+</div>
+</div>
+</div>
+<!-- Fruits Card -->
+<div class="group relative glass-panel rounded-[2rem] p-8 overflow-visible h-80 flex flex-col justify-end border border-white/5 transition-all duration-500 hover:bg-red-950/10">
+<div class="absolute -top-12 -right-8 w-48 h-48 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-6 drop-shadow-[0_35px_35px_rgba(255,113,108,0.2)]">
+<img alt="Glossy red apple" class="w-full h-full object-contain" data-alt="hyper-realistic photorealistic glossy red apple floating in air with soft studio lighting and cinematic bokeh background depth of field" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBi1p6DQsgICI1q3pg91vqYscG9oc0Qd7bNcnElW8K2fI0R2UGkmpFap1tGdVrM8PGyx8FiRPn5qR1sfHkkAvO4ja0AcYWNQIFy56kPqBy2nO6WUzMblVzTbPE21Skik8uBjzkLcG3a77cF-Z-dAT31zX6vLE6Xn-05T9xgWc4o9U89YSG24u3liT0ar7x_uFiYACS4IdnXnK6k1SNIveMIT_57_i6CwAfBVOQ9q3Ct5wBscs7HbRueqmBqDylZejNj_ZtWIHXwozs"/>
+</div>
+<div class="relative z-10">
+<span class="text-error font-label text-xs font-bold uppercase tracking-widest mb-2 block">Fruits</span>
+<h4 class="text-2xl font-bold font-headline text-white">Orchard Harvest</h4>
+<div class="flex items-center gap-4 mt-4">
+<div class="bg-error/20 px-3 py-1 rounded-md">
+<span class="text-error font-label font-bold text-sm">-2.1%</span>
+</div>
+<span class="text-on-surface-variant text-xs font-label">Stable Volume</span>
+</div>
+</div>
+</div>
+<!-- Cereals Card -->
+<div class="group relative glass-panel rounded-[2rem] p-8 overflow-visible h-80 flex flex-col justify-end border border-white/5 transition-all duration-500 hover:bg-orange-900/10">
+<div class="absolute -top-12 -right-8 w-48 h-48 transition-transform duration-700 group-hover:scale-110 group-hover:-translate-y-2 drop-shadow-[0_35px_35px_rgba(255,159,74,0.3)]">
+<img alt="Textured wheat stalks" class="w-full h-full object-contain" data-alt="highly detailed 3D render of golden wheat stalks with fine texture and dust motes catching sunlight on dark background unreal engine 5 style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxnceEjjK7TbabKMz8uYoo1WNKj7XPza9ubIqDP4_Kz9sKDHuWCzT5KhnEab2TKQMz-KJFWKgJ5bZCya4k9cRm51NdCn9c5tXQDLqAR_bLGQZ95mOJazdyiiuhcBTIxoZ7m89Dd1vvYutup_xmA0kScwT6Ph8basFVp0Hjc-pbZduJM4sFb9AgJqqcgWasKF2BTvODB9TUX2ljcRFw_6YYtj4Wrx7TTiXcA5KVl5Oct7X3LGnBaPBCReDtSfhYYdFmxPVCygKjFaE"/>
+</div>
+<div class="relative z-10">
+<span class="text-tertiary font-label text-xs font-bold uppercase tracking-widest mb-2 block">Cereals</span>
+<h4 class="text-2xl font-bold font-headline text-white">Ancient Grains</h4>
+<div class="flex items-center gap-4 mt-4">
+<div class="bg-tertiary/20 px-3 py-1 rounded-md">
+<span class="text-tertiary font-label font-bold text-sm">+8.7%</span>
+</div>
+<span class="text-on-surface-variant text-xs font-label">Futures Up</span>
+</div>
+</div>
+</div>
+<!-- Pulses Card -->
+<div class="group relative glass-panel rounded-[2rem] p-8 overflow-visible h-80 flex flex-col justify-end border border-white/5 transition-all duration-500 hover:bg-blue-950/10">
+<div class="absolute -top-12 -right-8 w-44 h-44 transition-transform duration-700 group-hover:scale-110 drop-shadow-[0_35px_35px_rgba(111,155,255,0.2)]">
+<img alt="Floating lentils" class="w-full h-full object-contain" data-alt="microscopic 3D view of floating organic lentils and pulses with cinematic lighting and soft particles against dark atmospheric background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1sWSeeCiP0hlrQtREz8cdi0mUqmAngyQgJPql-VYuRN5PtR4nZKae2-xPnjDaX1lhOMI-bq536wHYAfN202K-dE8pXcVqbv3xVHKiIay1V0JhdBCxYOctsU2RBSap1z6btW0XwQ9BQ0IccnnCZX2798zZOyblYxEaBqaXckSJ9yn6UgPqAh8WE265t-z5mXadr_rmeKVZpW7DS5ciFTpLUwzquD7LoNeLwI2hthBGwrXsqIVGBW7Hj_B1OOurokzvCDk5OcdlMoo"/>
+</div>
+<div class="relative z-10">
+<span class="text-secondary font-label text-xs font-bold uppercase tracking-widest mb-2 block">Pulses</span>
+<h4 class="text-2xl font-bold font-headline text-white">Legume Index</h4>
+<div class="flex items-center gap-4 mt-4">
+<div class="bg-secondary/20 px-3 py-1 rounded-md">
+<span class="text-secondary font-label font-bold text-sm">SECURE</span>
+</div>
+<span class="text-on-surface-variant text-xs font-label">Supply Chain Log</span>
+</div>
+</div>
+</div>
+<!-- Spices Card -->
+<div class="group relative glass-panel rounded-[2rem] p-8 overflow-visible h-80 flex flex-col justify-end border border-white/5 transition-all duration-500 hover:bg-orange-950/10">
+<div class="absolute -top-12 -right-8 w-44 h-44 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-12 drop-shadow-[0_35px_35px_rgba(253,139,0,0.3)]">
+<img alt="Cinnamon sticks" class="w-full h-full object-contain" data-alt="hyper-realistic photorealistic cinnamon sticks and star anise floating with soft floating spice dust particles and dramatic natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuChQnF5G5CCs3WfiT5WNkvOpJi-Mg8ur-XnCDXj91QXBSUrvwtY4I8ZAv8ejvaqdLSgf9Q4o-8krgKkZQZuwEB2XadGORf9bzaz9Ab8DrKS99Dr2GZPZ5M7MjNMBRoOoMVYG0eKNM1AhjFDOFKzgVvhNMXNo9R2uEG7ysB_Y4Ew4FcIrI7Rt9rZaH2ap4XI3DNeuZ7RTretFuRdJCoV_lra9BwxkF026WtVJEMC_OUyp4h-xuoZND0vPKkBxnBkpPZFGiBAIEfbxmU"/>
+</div>
+<div class="relative z-10">
+<span class="text-tertiary-fixed font-label text-xs font-bold uppercase tracking-widest mb-2 block">Spices</span>
+<h4 class="text-2xl font-bold font-headline text-white">Global Scents</h4>
+<div class="flex items-center gap-4 mt-4">
+<div class="bg-tertiary-container/20 px-3 py-1 rounded-md">
+<span class="text-tertiary-fixed font-label font-bold text-sm">+15.2%</span>
+</div>
+<span class="text-on-surface-variant text-xs font-label">Luxury Trend</span>
+</div>
+</div>
+</div>
+<!-- Others Card -->
+<div class="group relative glass-panel rounded-[2rem] p-8 overflow-visible h-80 flex flex-col justify-end border border-white/5 transition-all duration-500 hover:bg-white/5">
+<div class="absolute -top-12 -right-8 w-44 h-44 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-12 drop-shadow-[0_35px_35px_rgba(255,255,255,0.1)]">
+<img alt="Exotic mushrooms" class="w-full h-full object-contain" data-alt="surreal hyper-realistic glowing exotic mushrooms with intricate gills and soft bioluminescent light in a cinematic dark forest floor macro view" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgEfs5mEWIdkCIpDIXBB-U66TkgknH-ilPs8KPOjCpnTdVE9D7SEKhnvyn7fpheYmAFhs8UQyN3XM2fCHh-cgBBSj5Y8mA4JX7uFqAoOCv-aNmFDGWcEzfumd1Dvx4TXC1IRXXpQ_HgOg-MsVkSG9LJATgBgo8lcYvDTV0qx5jBYVcKGf9LUPiCXrhWiyt_3aVS8zKpVhSPiDJ3N-YQFPW7oPwGea5HzxPSYkCVHBkcsb5WxHWrxvcMsMa7d-r2vH1Ss1LWiIG8Cg"/>
+</div>
+<div class="relative z-10">
+<span class="text-on-surface-variant font-label text-xs font-bold uppercase tracking-widest mb-2 block">Others</span>
+<h4 class="text-2xl font-bold font-headline text-white">Specialty Crops</h4>
+<div class="flex items-center gap-4 mt-4">
+<div class="bg-surface-container-highest px-3 py-1 rounded-md">
+<span class="text-on-surface font-label font-bold text-sm">NEW</span>
+</div>
+<span class="text-on-surface-variant text-xs font-label">Vertical Farm Lab</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Ambient Particle Effect Container -->
+<div class="absolute inset-0 pointer-events-none overflow-hidden mix-blend-screen opacity-30">
+<div class="absolute top-1/4 left-1/4 w-1 h-1 bg-white rounded-full animate-pulse shadow-[0_0_10px_white]"></div>
+<div class="absolute top-1/2 left-3/4 w-0.5 h-0.5 bg-white rounded-full animate-pulse shadow-[0_0_8px_white]"></div>
+<div class="absolute bottom-1/4 right-1/2 w-1.5 h-1.5 bg-primary/40 rounded-full animate-pulse shadow-[0_0_12px_rgba(134,254,167,0.5)]"></div>
+</div>
+</main>
+<!-- Bottom Navigation (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-emerald-950/80 backdrop-blur-3xl flex items-center justify-around px-6 z-50 rounded-t-[2rem]">
+<a class="text-emerald-400 flex flex-col items-center gap-1" href="#">
+<span class="material-symbols-outlined text-2xl">home</span>
+<span class="text-[10px] font-label uppercase">Home</span>
+</a>
+<a class="text-emerald-100/40 flex flex-col items-center gap-1" href="#">
+<span class="material-symbols-outlined text-2xl">inventory_2</span>
+<span class="text-[10px] font-label uppercase">Stock</span>
+</a>
+<div class="relative -top-6">
+<button class="w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg shadow-primary/40 flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</div>
+<a class="text-emerald-100/40 flex flex-col items-center gap-1" href="#">
+<span class="material-symbols-outlined text-2xl">monitoring</span>
+<span class="text-[10px] font-label uppercase">Trends</span>
+</a>
+<a class="text-emerald-100/40 flex flex-col items-center gap-1" href="#">
+<span class="material-symbols-outlined text-2xl">settings</span>
+<span class="text-[10px] font-label uppercase">Config</span>
+</a>
+</nav>
+</body></html>

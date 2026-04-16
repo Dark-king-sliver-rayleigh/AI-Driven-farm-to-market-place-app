@@ -539,7 +539,8 @@ class RoutePlanningService {
     }
 
     // Auto-transition route to IN_PROGRESS on first ARRIVED/COMPLETED stop
-    if (plan.status === 'ASSIGNED' && ['ARRIVED', 'COMPLETED'].includes(newStatus)) {
+    // Handles both DRAFT (no driver assigned) and ASSIGNED (driver assigned) plans
+    if (['DRAFT', 'ASSIGNED'].includes(plan.status) && ['ARRIVED', 'COMPLETED'].includes(newStatus)) {
       plan.status = 'IN_PROGRESS';
     }
 
